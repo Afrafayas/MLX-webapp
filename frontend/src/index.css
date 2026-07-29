@@ -1608,3 +1608,193 @@ a {
   object-fit: cover;
 }
 
+/* --- MOBILE & TABLET RESPONSIVENESS OVERRIDES --- */
+
+/* Header Mobile Adjustments */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    justify-content: space-between;
+    width: 100%;
+    order: 2;
+  }
+
+  .header-search {
+    max-width: 100%;
+    width: 100%;
+    order: 3; /* Search bar stacks at the bottom in mobile view */
+  }
+
+  .logo-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* Hero Section Mobile Adjustments */
+@media (max-width: 1024px) {
+  .hero-container {
+    flex-direction: column;
+    gap: 3rem;
+    padding: 3rem 1.5rem;
+    text-align: center;
+  }
+
+  .hero-badge {
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-description {
+    margin: 0 auto 1.5rem;
+  }
+
+  .hero-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-visual {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .device-art-card {
+    width: 100%;
+    max-width: 350px;
+  }
+}
+
+/* Value Badges Mobile Adjustments */
+@media (max-width: 768px) {
+  .badges-container {
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .badge-item {
+    font-size: 0.8rem;
+  }
+}
+
+/* Marketplace Grid Layout */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+
+  .sidebar-filters {
+    position: static;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Split filter blocks side-by-side on tablet */
+  .filter-group {
+    display: inline-block;
+    width: 48%;
+    vertical-align: top;
+    margin-right: 2%;
+    margin-bottom: 1rem;
+  }
+
+  .filter-group:nth-child(even) {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .filter-group {
+    display: block;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Dashboard View Adjustments */
+@media (max-width: 768px) {
+  .dashboard-view {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+    gap: 1.5rem;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .dashboard-profile-hdr {
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+  }
+  
+  .dashboard-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dash-menu-btn {
+    white-space: nowrap;
+    padding: 0.6rem 1rem;
+  }
+  
+  .dashboard-panel {
+    padding: 1.5rem;
+  }
+}
+
+/* Product Detail Modal Mobile Adjustments */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0.75rem;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .product-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-media {
+    border-right: none;
+    border-bottom: 1px solid var(--light-border);
+    padding: 1.25rem;
+  }
+
+  .detail-info {
+    padding: 1.5rem;
+  }
+
+  .detail-title {
+    font-size: 1.4rem;
+  }
+  
+  .sourcing-actions {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+
