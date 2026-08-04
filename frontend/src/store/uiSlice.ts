@@ -4,7 +4,7 @@ import { SourcingToast } from '../types';
 interface UiState {
   toasts: SourcingToast[];
   activeView: 'marketplace' | 'dashboard';
-  dashboardTab: 'listings' | 'profile';
+  dashboardTab: 'listings' | 'profile' | 'leads';
 }
 
 const initialState: UiState = {
@@ -31,7 +31,7 @@ const uiSlice = createSlice({
     setActiveView(state, action: PayloadAction<'marketplace' | 'dashboard'>) {
       state.activeView = action.payload;
     },
-    setDashboardTab(state, action: PayloadAction<'listings' | 'profile'>) {
+    setDashboardTab(state, action: PayloadAction<'listings' | 'profile' | 'leads'>) {
       state.dashboardTab = action.payload;
     },
   },

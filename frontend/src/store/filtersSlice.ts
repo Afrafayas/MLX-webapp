@@ -8,6 +8,8 @@ interface FiltersState {
   filterMinPrice: string;
   filterMaxPrice: string;
   filterInStockOnly: boolean;
+  filterCity: string;
+  filterMaxBudget: string;
   sortBy: 'featured' | 'price-asc' | 'price-desc' | 'stock';
 }
 
@@ -19,6 +21,8 @@ const initialState: FiltersState = {
   filterMinPrice: '',
   filterMaxPrice: '',
   filterInStockOnly: false,
+  filterCity: 'All Cities',
+  filterMaxBudget: 'Any Budget',
   sortBy: 'featured',
 };
 
@@ -47,6 +51,12 @@ const filtersSlice = createSlice({
     setFilterInStockOnly(state, action: PayloadAction<boolean>) {
       state.filterInStockOnly = action.payload;
     },
+    setFilterCity(state, action: PayloadAction<string>) {
+      state.filterCity = action.payload;
+    },
+    setFilterMaxBudget(state, action: PayloadAction<string>) {
+      state.filterMaxBudget = action.payload;
+    },
     setSortBy(state, action: PayloadAction<'featured' | 'price-asc' | 'price-desc' | 'stock'>) {
       state.sortBy = action.payload;
     },
@@ -58,6 +68,8 @@ const filtersSlice = createSlice({
       state.filterMinPrice = '';
       state.filterMaxPrice = '';
       state.filterInStockOnly = false;
+      state.filterCity = 'All Cities';
+      state.filterMaxBudget = 'Any Budget';
       state.sortBy = 'featured';
     },
   },
@@ -71,6 +83,8 @@ export const {
   setFilterMinPrice,
   setFilterMaxPrice,
   setFilterInStockOnly,
+  setFilterCity,
+  setFilterMaxBudget,
   setSortBy,
   clearFilters,
 } = filtersSlice.actions;

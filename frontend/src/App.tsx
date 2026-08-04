@@ -6,7 +6,6 @@ import {
   Smartphone, 
   Laptop, 
   Layers, 
-  Clock, 
   ShieldCheck, 
   ChevronRight, 
   Plus, 
@@ -21,11 +20,16 @@ import {
   HelpCircle,
   Info,
   Watch,
-  Tablet as TabletIcon
+  Tablet as TabletIcon,
+  MessageSquare,
+  Tag,
+  Calendar
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from './store';
 import { 
   setActiveShop, 
+  setActiveUser,
+  setAuthRole,
   setShowAuthModal, 
   setAuthTab 
 } from './store/authSlice';
@@ -37,7 +41,8 @@ import {
   deleteProduct, 
   setSelectedProduct, 
   setShowAddEditModal, 
-  setProductToEdit 
+  setProductToEdit,
+  addLead
 } from './store/productsSlice';
 import { 
   setSearchQuery, 
@@ -47,6 +52,8 @@ import {
   setFilterMinPrice, 
   setFilterMaxPrice, 
   setFilterInStockOnly, 
+  setFilterCity,
+  setFilterMaxBudget,
   setSortBy, 
   clearFilters 
 } from './store/filtersSlice';
@@ -56,28 +63,72 @@ import {
   setActiveView, 
   setDashboardTab 
 } from './store/uiSlice';
-import { CATEGORIES } from './data/mockData';
-import { Product, Shop } from './types';
+import { CATEGORIES, CITIES, BUDGET_PRESETS, INITIAL_USERS } from './data/mockData';
+import { Product, Shop, Lead, User as CustomerUser } from './types';
 
 export default function App() {
   const dispatch = useAppDispatch();
 
   // --- REDUX SELECTORS ---
-  const { activeShop, showAuthModal, authTab } = useAppSelector(state => state.auth);
-  const { items: products, shops, selectedProduct, showAddEditModal, productToEdit } = useAppSelector(state => state.products);
+  const { activeShop, activeUser, authRole, showAuthModal, authTab } = useAppSelector(state => state.auth);
+  const { items: products, shops, leads, selectedProduct, showAddEditModal, productToEdit } = useAppSelector(state => state.products);
   const filters = useAppSelector(state => state.filters);
   const { toasts, activeView, dashboardTab } = useAppSelector(state => state.ui);
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
   const [loginShopId, setLoginShopId] = React.useState('');
+  const [customerEmailInput, setCustomerEmailInput] = React.useState('');
+  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+  const [currentSlide, setCurrentSlide] = React.useState(0);
+
+  const slides = [
+    {
+      badge: "🔥 Hot Deal of the Week",
+      title: "Up to 40% Off on Certified Used iPhones",
+      subtext: "Hand-tested Grade A devices with store warranty. Direct deals, zero platform commission.",
+      offerText: "Limited stock starting at ₹12,000",
+      image: "/images/iphone_17_pro_1.png",
+      bgColor: "#111217"
+    },
+    {
+      badge: "💻 Tech For Students",
+      title: "Spotless Refurbished MacBooks & Laptops",
+      subtext: "Corporate refurbished items. Minimum 3 months seller warranty and fast chargers included.",
+      offerText: "Deals starting at ₹18,000",
+      image: "/images/macbook_air_m3.png",
+      bgColor: "#0f172a"
+    },
+    {
+      badge: "🛡️ MLX Verified Local Stores",
+      title: "Buy Directly From Local Dealers Near You",
+      subtext: "Pick your city location, click Call/WhatsApp to inspect before you buy. 100% safe store checks.",
+      offerText: "Available in Kochi, Calicut, Trivandrum & Thrissur",
+      image: "/images/watch_ultra_2.png",
+      bgColor: "#022c22"
+    }
+  ];
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % 3);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+  
+  const [customerRegisterForm, setCustomerRegisterForm] = React.useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+
   const [registerForm, setRegisterForm] = React.useState({
     name: '',
     ownerName: '',
     phone: '',
     whatsapp: '',
     address: '',
-    city: '',
-    category: 'Mobiles & Accessories'
+    city: 'Kochi',
+    category: 'Mobiles & Tablets'
   });
 
   const [productForm, setProductForm] = React.useState({
@@ -88,7 +139,7 @@ export default function App() {
     price: '',
     stock: '',
     specVal1: '',
-    specVal2: 'Grade A',
+    specVal2: 'Grade A (Like New)',
     specVal3: ''
   });
 
@@ -112,7 +163,7 @@ export default function App() {
         whatsapp: activeShop.whatsapp,
         address: activeShop.address,
         city: activeShop.city,
-        category: activeShop.category || 'Mobiles & Accessories'
+        category: activeShop.category || 'Mobiles & Tablets'
       });
     }
   }, [activeShop, dashboardTab]);
@@ -128,7 +179,7 @@ export default function App() {
         price: productToEdit.price.toString(),
         stock: productToEdit.stock.toString(),
         specVal1: productToEdit.specs?.['Storage'] || productToEdit.specs?.['Processor'] || '',
-        specVal2: productToEdit.specs?.['Condition'] || 'Grade A',
+        specVal2: productToEdit.specs?.['Condition'] || 'Grade A (Like New)',
         specVal3: productToEdit.specs?.['Warranty'] || ''
       });
     } else {
@@ -140,7 +191,7 @@ export default function App() {
         price: '',
         stock: '',
         specVal1: '',
-        specVal2: 'Grade A',
+        specVal2: 'Grade A (Like New)',
         specVal3: ''
       });
     }
@@ -165,6 +216,8 @@ export default function App() {
 
   // --- FILTER & SORT LOGIC ---
   const filteredProducts = products.filter(product => {
+    const seller = getSellerShop(product.shopId);
+
     // 1. Keyword search (Name, Brand, Description, Category)
     const query = filters.searchQuery.toLowerCase().trim();
     const matchesQuery = !query || 
@@ -193,7 +246,20 @@ export default function App() {
     // 6. Sidebar Stock Availability Filter
     const matchesStock = !filters.filterInStockOnly || product.stock > 0;
 
-    return matchesQuery && matchesSearchCat && matchesQuickCat && matchesBrand && matchesPrice && matchesStock;
+    // 7. B2C City Location Filter
+    const matchesCity = filters.filterCity === 'All Cities' || 
+      seller.city.toLowerCase() === filters.filterCity.toLowerCase();
+
+    // 8. B2C Budget Preset Filter
+    let matchesBudget = true;
+    if (filters.filterMaxBudget !== 'Any Budget') {
+      const limit = parseInt(filters.filterMaxBudget.replace(/\D/g, ''), 10);
+      if (!isNaN(limit)) {
+        matchesBudget = product.price <= limit;
+      }
+    }
+
+    return matchesQuery && matchesSearchCat && matchesQuickCat && matchesBrand && matchesPrice && matchesStock && matchesCity && matchesBudget;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -209,57 +275,114 @@ export default function App() {
   // --- HANDLERS ---
   const triggerToast = (message: string, type: 'info' | 'success' | 'warning' = 'info') => {
     dispatch(addToast({ message, type }));
-    // Auto-remove toast via ID is handled inside slice (via action delay simulation)
   };
 
   const handleLoginSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!loginShopId) return;
-    const shop = shops.find(s => s.id === loginShopId);
-    if (shop) {
-      dispatch(setActiveShop(shop));
-      dispatch(setShowAuthModal(false));
-      triggerToast(`Welcome back, ${shop.name}!`, 'success');
-      dispatch(setActiveView('marketplace'));
-      setLoginShopId('');
+    if (authRole === 'seller') {
+      if (!loginShopId) return;
+      const shop = shops.find(s => s.id === loginShopId);
+      if (shop) {
+        dispatch(setActiveShop(shop));
+        dispatch(setActiveUser(null)); // Logout user
+        dispatch(setShowAuthModal(false));
+        triggerToast(`Welcome back, ${shop.name}!`, 'success');
+        dispatch(setActiveView('dashboard'));
+        dispatch(setDashboardTab('listings'));
+        setLoginShopId('');
+      }
+    } else {
+      // Customer login logic
+      if (!customerEmailInput) return;
+      const matchedUser = INITIAL_USERS.find(u => u.email.toLowerCase() === customerEmailInput.toLowerCase().trim());
+      if (matchedUser) {
+        dispatch(setActiveUser(matchedUser));
+        dispatch(setActiveShop(null)); // Logout seller
+        dispatch(setShowAuthModal(false));
+        triggerToast(`Welcome back, ${matchedUser.name}!`, 'success');
+        dispatch(setActiveView('marketplace'));
+        setCustomerEmailInput('');
+      } else {
+        // Fallback demo user creation
+        const demoUser: CustomerUser = {
+          id: `user-${Date.now()}`,
+          name: "Guest Customer",
+          email: customerEmailInput,
+          phone: "+91 90000 00000"
+        };
+        dispatch(setActiveUser(demoUser));
+        dispatch(setActiveShop(null));
+        dispatch(setShowAuthModal(false));
+        triggerToast(`Signed in as ${demoUser.name} (${demoUser.email})`, 'success');
+        dispatch(setActiveView('marketplace'));
+        setCustomerEmailInput('');
+      }
     }
   };
 
   const handleRegisterSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!registerForm.name || !registerForm.ownerName || !registerForm.phone || !registerForm.whatsapp) {
-      alert("Please fill in all mandatory fields.");
-      return;
-    }
-    const newShop: Shop = {
-      id: `shop-${shops.length + 1}`,
-      name: registerForm.name,
-      ownerName: registerForm.ownerName,
-      phone: registerForm.phone,
-      whatsapp: registerForm.whatsapp.replace(/\D/g, ''),
-      address: registerForm.address || "Dealer Main Market",
-      city: registerForm.city || "India",
-      category: registerForm.category,
-      verified: true,
-      rating: 5.0,
-      joinedDate: "Today"
-    };
+    if (authRole === 'seller') {
+      if (!registerForm.name || !registerForm.ownerName || !registerForm.phone || !registerForm.whatsapp) {
+        alert("Please fill in all mandatory fields.");
+        return;
+      }
+      const newShop: Shop = {
+        id: `shop-${shops.length + 1}`,
+        name: registerForm.name,
+        ownerName: registerForm.ownerName,
+        phone: registerForm.phone,
+        whatsapp: registerForm.whatsapp.replace(/\D/g, ''),
+        address: registerForm.address || "Dealer Main Market",
+        city: registerForm.city,
+        category: registerForm.category,
+        verified: true,
+        rating: 5.0,
+        joinedDate: "Today"
+      };
 
-    dispatch(addShop(newShop));
-    dispatch(setActiveShop(newShop));
-    dispatch(setShowAuthModal(false));
-    triggerToast(`Shop "${registerForm.name}" registered and logged in!`, 'success');
-    
-    // reset form
-    setRegisterForm({
-      name: '',
-      ownerName: '',
-      phone: '',
-      whatsapp: '',
-      address: '',
-      city: '',
-      category: 'Mobiles & Accessories'
-    });
+      dispatch(addShop(newShop));
+      dispatch(setActiveShop(newShop));
+      dispatch(setActiveUser(null));
+      dispatch(setShowAuthModal(false));
+      triggerToast(`Shop "${registerForm.name}" registered and logged in!`, 'success');
+      dispatch(setActiveView('dashboard'));
+      
+      // reset form
+      setRegisterForm({
+        name: '',
+        ownerName: '',
+        phone: '',
+        whatsapp: '',
+        address: '',
+        city: 'New Delhi',
+        category: 'Mobiles & Tablets'
+      });
+    } else {
+      // Customer registration logic
+      if (!customerRegisterForm.name || !customerRegisterForm.email || !customerRegisterForm.phone) {
+        alert("Please fill in all fields.");
+        return;
+      }
+      const newCust: CustomerUser = {
+        id: `user-${Date.now()}`,
+        name: customerRegisterForm.name,
+        email: customerRegisterForm.email,
+        phone: customerRegisterForm.phone
+      };
+
+      dispatch(setActiveUser(newCust));
+      dispatch(setActiveShop(null));
+      dispatch(setShowAuthModal(false));
+      triggerToast(`Welcome to MLX Market, ${customerRegisterForm.name}!`, 'success');
+      dispatch(setActiveView('marketplace'));
+
+      setCustomerRegisterForm({
+        name: '',
+        email: '',
+        phone: ''
+      });
+    }
   };
 
   const handleProfileUpdate = (e: FormEvent) => {
@@ -283,9 +406,10 @@ export default function App() {
 
   const handleOpenAddProduct = () => {
     if (!activeShop) {
+      dispatch(setAuthRole('seller'));
       dispatch(setAuthTab('login'));
       dispatch(setShowAuthModal(true));
-      triggerToast("Please login or register your shop to list products.");
+      triggerToast("Please login as a seller to list products.");
       return;
     }
     dispatch(setProductToEdit(null));
@@ -305,7 +429,6 @@ export default function App() {
       "Condition": productForm.specVal2
     };
     
-    // Add conditional spec details
     if (productForm.category === 'Mobiles' || productForm.category === 'Tablets') {
       if (productForm.specVal1) specs['Storage'] = productForm.specVal1;
     } else if (productForm.category === 'Laptops') {
@@ -328,7 +451,7 @@ export default function App() {
         specs
       };
       dispatch(editProduct(updated));
-      triggerToast("Product listing updated successfully!", "success");
+      triggerToast("Listing updated successfully!", "success");
     } else {
       const newProduct: Product = {
         id: `prod-${products.length + 1}`,
@@ -339,10 +462,11 @@ export default function App() {
         price: parseFloat(productForm.price),
         stock: parseInt(productForm.stock),
         shopId: activeShop.id,
-        specs
+        specs,
+        images: []
       };
       dispatch(addProduct(newProduct));
-      triggerToast("New sourcing product listed successfully!", "success");
+      triggerToast("New used gadget listed successfully!", "success");
     }
 
     dispatch(setShowAddEditModal(false));
@@ -351,18 +475,41 @@ export default function App() {
   const handleDeleteListing = (productId: string) => {
     if (window.confirm("Are you sure you want to remove this product listing?")) {
       dispatch(deleteProduct(productId));
-      triggerToast("Listing removed from database.");
+      triggerToast("Listing removed from directory.");
     }
   };
 
+  // Capture Lead & Open Link
+  const triggerLeadCapture = (product: Product, seller: Shop, contactType: 'call' | 'whatsapp') => {
+    const leadId = `lead-${Date.now()}`;
+    const name = activeUser ? activeUser.name : "Anonymous Buyer";
+    const phone = activeUser ? activeUser.phone : "Not Logged In";
+    
+    const newLead: Lead = {
+      id: leadId,
+      shopId: seller.id,
+      productId: product.id,
+      productName: product.name,
+      customerName: name,
+      customerPhone: phone,
+      contactType,
+      createdAt: new Date().toISOString()
+    };
+    
+    dispatch(addLead(newLead));
+  };
+
   const handleCallSeller = (product: Product, seller: Shop) => {
-    triggerToast(`📞 Simulating Direct Call: Dialing ${seller.phone} (${seller.name}) regarding "${product.name}"...`, 'success');
+    triggerLeadCapture(product, seller, 'call');
+    triggerToast(`📞 Connecting call with ${seller.name} (${seller.phone}) regarding "${product.name}"...`, 'success');
   };
 
   const handleWhatsAppSeller = (product: Product, seller: Shop) => {
-    const text = `Hi ${seller.ownerName}, I saw your product "${product.name}" (Listed Sourcing Price: ₹${product.price.toLocaleString('en-IN')}) on MLX Market and want to source it to fulfill a customer requirement. Is it currently in stock?`;
+    triggerLeadCapture(product, seller, 'whatsapp');
+    const name = activeUser ? activeUser.name : "Customer";
+    const text = `Hi ${seller.ownerName}, I saw your product "${product.name}" listed for ₹${product.price.toLocaleString('en-IN')} on MLX Market. I am interested in buying it. Is it still available? - Sent by ${name}`;
     const waUrl = `https://wa.me/${seller.whatsapp}?text=${encodeURIComponent(text)}`;
-    triggerToast(`💬 Launching WhatsApp chat with ${seller.name} regarding sourcing...`, 'success');
+    triggerToast(`💬 Opening WhatsApp chat with ${seller.name} regarding "${product.name}"...`, 'success');
     window.open(waUrl, '_blank');
   };
 
@@ -379,6 +526,21 @@ export default function App() {
       default:
         return <Layers className={cssClass} />;
     }
+  };
+
+  // Filter lists inside Instagram search overlay
+  const handleTagClick = (tagType: 'query' | 'category' | 'budget' | 'city', value: string) => {
+    if (tagType === 'query') {
+      dispatch(setSearchQuery(value));
+    } else if (tagType === 'category') {
+      dispatch(setSelectedCategory(value));
+    } else if (tagType === 'budget') {
+      dispatch(setFilterMaxBudget(value));
+    } else if (tagType === 'city') {
+      dispatch(setFilterCity(value));
+    }
+    setIsSearchFocused(false);
+    dispatch(setActiveView('marketplace'));
   };
 
   return (
@@ -400,67 +562,128 @@ export default function App() {
           <div className="logo-section" onClick={() => { dispatch(setActiveView('marketplace')); dispatch(clearFilters()); }}>
             <img src="/logo.png" alt="MLX Market Logo" className="logo-img" />
             <div className="logo-text">
-              <span className="logo-title">MLX <span>MARKET</span></span>
-              <span className="logo-subtitle">THE TRUSTED TECH SOURCING PLATFORM</span>
+              <span className="logo-title">MLX <span>DIRECT</span></span>
+              <span className="logo-subtitle">USED GADGETS DIRECTORY</span>
             </div>
           </div>
 
-          {/* Search bar inside header */}
-          <div className="header-search">
-            <select 
-              className="search-select"
-              value={filters.searchCategory}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setSearchCategory(e.target.value))}
-            >
-              <option value="All Categories">All Categories</option>
-              <option value="Mobiles">Mobiles</option>
-              <option value="Laptops">Laptops</option>
-              <option value="Accessories">Accessories</option>
-              <option value="Tablets">Tablets</option>
-              <option value="Smart Watches">Smart Watches</option>
-            </select>
-            <input 
-              type="text" 
-              className="search-input"
-              placeholder="Search by product name, brand..."
-              value={filters.searchQuery}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setSearchQuery(e.target.value))}
-            />
-            <button className="search-btn" onClick={() => dispatch(setActiveView('marketplace'))}>
-              <Search size={16} />
-              <span>Search</span>
-            </button>
+          {/* Search bar inside header with Instagram-Style dropdown overlay */}
+          <div className="header-search-container" style={{ position: 'relative', flex: 1, maxWidth: '550px', zIndex: isSearchFocused ? 102 : 1 }}>
+            <div className="header-search" style={{ position: 'relative', zIndex: isSearchFocused ? 105 : 1 }}>
+              <select 
+                className="search-select"
+                value={filters.searchCategory}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setSearchCategory(e.target.value))}
+              >
+                <option value="All Categories">All Categories</option>
+                {CATEGORIES.filter(c => c !== "All Categories").map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <input 
+                type="text" 
+                className="search-input"
+                placeholder="Search used iPhones, OnePlus, budget..."
+                value={filters.searchQuery}
+                onFocus={() => setIsSearchFocused(true)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setSearchQuery(e.target.value))}
+              />
+              <button className="search-btn" onClick={() => { setIsSearchFocused(false); dispatch(setActiveView('marketplace')); }}>
+                <Search size={16} />
+                <span>Search</span>
+              </button>
+            </div>
+
+            {/* Instagram Style Search Overlay Panel */}
+            {isSearchFocused && (
+              <>
+                <div className="search-overlay-backdrop" onClick={() => setIsSearchFocused(false)}></div>
+                <div className="search-explore-overlay minimal-search-overlay">
+                  {/* Row 1: Detect Location & Cities */}
+                  <div className="overlay-minimal-row">
+                    <button 
+                      type="button"
+                      className="detect-location-btn" 
+                      onClick={() => {
+                        dispatch(setFilterCity('Kochi'));
+                        triggerToast("📍 Geolocation active: Selected Kochi as nearest city!", "success");
+                        setIsSearchFocused(false);
+                        dispatch(setActiveView('marketplace'));
+                      }}
+                    >
+                      <MapPin size={13} style={{ flexShrink: 0 }} />
+                      <span>Near Me</span>
+                    </button>
+                    <div className="minimal-tags">
+                      {CITIES.filter(c => c !== "All Cities").map(city => (
+                        <button key={city} className="min-tag city" onClick={() => handleTagClick('city', city)}>{city}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Row 2: Budgets & Categories */}
+                  <div className="overlay-minimal-row">
+                    <span className="min-row-lbl">Budgets:</span>
+                    <div className="minimal-tags">
+                      <button className="min-tag budget" onClick={() => handleTagClick('budget', 'Under ₹5,000')}>&lt; 5k</button>
+                      <button className="min-tag budget" onClick={() => handleTagClick('budget', 'Under ₹10,000')}>&lt; 10k</button>
+                      <button className="min-tag budget" onClick={() => handleTagClick('budget', 'Under ₹25,000')}>&lt; 25k</button>
+                    </div>
+                    <span className="min-row-lbl" style={{ marginLeft: '0.5rem' }}>Categories:</span>
+                    <div className="minimal-tags">
+                      <button className="min-tag cat" onClick={() => handleTagClick('category', 'Mobiles')}>Mobiles</button>
+                      <button className="min-tag cat" onClick={() => handleTagClick('category', 'Laptops')}>Laptops</button>
+                      <button className="min-tag cat" onClick={() => handleTagClick('category', 'Smart Watches')}>Watches</button>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Trending Models */}
+                  <div className="overlay-minimal-row" style={{ borderTop: '1px solid var(--light-border)', paddingTop: '0.5rem', marginTop: '0.25rem', width: '100%' }}>
+                    <span className="min-row-lbl">Trending:</span>
+                    <div className="minimal-tags">
+                      <button className="min-tag model" onClick={() => handleTagClick('query', 'iPhone 13')}>iPhone 13</button>
+                      <button className="min-tag model" onClick={() => handleTagClick('query', 'Samsung S22')}>Samsung S22</button>
+                      <button className="min-tag model" onClick={() => handleTagClick('query', 'MacBook Air')}>MacBook Air</button>
+                      <button className="min-tag model" onClick={() => handleTagClick('query', 'OnePlus')}>OnePlus</button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Header Action Buttons */}
+          {/* Header Action Buttons for standard Users and Seller Shop Portal */}
           <div className="header-actions">
-            <button className="action-btn sell-btn" onClick={handleOpenAddProduct}>
-              <Plus size={16} />
-              <span>Sell on MLX</span>
-            </button>
-
             {activeShop ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button 
-                  className={`action-btn ${activeView === 'dashboard' ? 'active' : ''}`}
+                  className={`action-btn sell-btn ${activeView === 'dashboard' ? 'active' : ''}`} 
                   onClick={() => { dispatch(setActiveView('dashboard')); dispatch(setDashboardTab('listings')); }}
-                  style={{ 
-                    backgroundColor: activeView === 'dashboard' ? 'var(--primary-light)' : 'transparent', 
-                    color: activeView === 'dashboard' ? 'var(--primary)' : 'white' 
-                  }}
                 >
                   <Store size={16} />
-                  <span>{activeShop.name}</span>
+                  <span>Shop Dashboard</span>
                 </button>
-                <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Logged out successfully."); }} title="Logout">
+                <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); dispatch(setActiveView('marketplace')); }} title="Logout Shop">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : activeUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="user-indicator">
+                  <User size={14} />
+                  <span>{activeUser.name} (Buyer)</span>
+                </span>
+                <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); }} title="Logout User">
                   <LogOut size={16} />
                 </button>
               </div>
             ) : (
-              <button className="action-btn" onClick={() => { dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>
-                <LogIn size={16} />
-                <span>Dealer Login</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="action-btn sell-btn" onClick={() => { dispatch(setAuthRole('customer')); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>
+                  <LogIn size={15} />
+                  <span>Sign In / Register</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -484,86 +707,36 @@ export default function App() {
         </div>
       </div>
 
-      {/* --- HERO BANNER (Marketplace Main View Only) --- */}
+      {/* --- TOP DYNAMIC SLIDER (Marketplace Main View Only) --- */}
       {activeView === 'marketplace' && (
-        <section className="hero-banner">
-          <div className="hero-container">
-            <div className="hero-content">
-              <span className="hero-badge">
+        <section className="slider-banner-section" style={{ background: slides[currentSlide].bgColor }}>
+          <div className="slider-banner-container">
+            <div className="slider-content-pane">
+              <span className="slider-badge">
                 <ShieldCheck size={14} />
-                <span>100% Verified Shop-to-Shop Network</span>
+                <span>{slides[currentSlide].badge}</span>
               </span>
-              <h1 className="hero-title">
-                India's <span>Trusted</span> Tech Sourcing Network for Dealers
-              </h1>
-              <p className="hero-description">
-                retailers can find products from other registered shops and source them to fulfill customer requirements. Zero commission. No checkout, direct call & whatsapp connections only.
-              </p>
-              <div className="hero-actions">
-                <button className="btn-primary" onClick={() => {
-                  document.getElementById('marketplace-grid')?.scrollIntoView({ behavior: 'smooth' });
-                }}>
-                  Explore Sourcing Catalog
-                </button>
-                <button 
-                  className="btn-outline-dark" 
-                  onClick={() => {
-                    if (activeShop) {
-                      dispatch(setActiveView('dashboard'));
-                    } else {
-                      dispatch(setAuthTab('register'));
-                      dispatch(setShowAuthModal(true));
-                    }
-                  }}
-                >
-                  Register Your Shop
-                </button>
+              <h2 className="slider-title">{slides[currentSlide].title}</h2>
+              <p className="slider-subtext">{slides[currentSlide].subtext}</p>
+              <div className="slider-offer-badge">
+                <Tag size={14} />
+                <span>{slides[currentSlide].offerText}</span>
+              </div>
+              <div className="slider-controls">
+                {slides.map((_, idx) => (
+                  <button 
+                    key={idx} 
+                    className={`slider-dot ${idx === currentSlide ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(idx)}
+                    title={`Slide ${idx + 1}`}
+                  />
+                ))}
               </div>
             </div>
-
-            <div className="hero-visual">
-              <div className="device-art-card">
-                <span className="art-title">Dealer Directory</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ fontWeight: 600, fontSize: '1.25rem', color: '#FFF' }}>Sourcing Activity</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary-dark)' }}>Connecting 400+ tech shops across Delhi, Mumbai, Chennai, and Bengaluru</div>
-                </div>
-                <div className="art-stats">
-                  <div className="stat-item">
-                    <span className="stat-val">{shops.length}</span>
-                    <span className="stat-lbl">Active Dealers</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-val">{products.length}</span>
-                    <span className="stat-lbl">Sourcing Assets</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-val">₹0</span>
-                    <span className="stat-lbl">Platform Fees</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="value-badges">
-            <div className="badges-container">
-              <span className="badge-item">
-                <CheckCircle size={16} />
-                <span><strong>100%</strong> Verified B2B Dealers Only</span>
-              </span>
-              <span className="badge-item">
-                <Clock size={16} />
-                <span><strong>No Customer</strong> Direct Checkout</span>
-              </span>
-              <span className="badge-item">
-                <Layers size={16} />
-                <span><strong>Real-time</strong> Stock & Spec Sheets</span>
-              </span>
-              <span className="badge-item">
-                <Phone size={16} />
-                <span><strong>Direct Call</strong> & WhatsApp Connections</span>
-              </span>
+            
+            <div className="slider-image-pane">
+              <div className="slider-radial-glow"></div>
+              <img src={slides[currentSlide].image} alt="Promotion device" className="slider-floating-img" />
             </div>
           </div>
         </section>
@@ -575,10 +748,39 @@ export default function App() {
           {/* Sidebar Filters */}
           <aside className="sidebar-filters">
             <div className="filter-title-bar">
-              <span className="filter-title">Filters</span>
+              <span className="filter-title">Filter Gadgets</span>
               <button className="clear-filter-btn" onClick={() => dispatch(clearFilters())}>Clear All</button>
             </div>
 
+            {/* City Selector */}
+            <div className="filter-group">
+              <label className="filter-label">Select City</label>
+              <select 
+                className="filter-select"
+                value={filters.filterCity}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setFilterCity(e.target.value))}
+              >
+                {CITIES.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Budget Presets */}
+            <div className="filter-group">
+              <label className="filter-label">Max Budget Limit</label>
+              <select 
+                className="filter-select"
+                value={filters.filterMaxBudget}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setFilterMaxBudget(e.target.value))}
+              >
+                {BUDGET_PRESETS.map(budget => (
+                  <option key={budget} value={budget}>{budget}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Brand Filter */}
             <div className="filter-group">
               <label className="filter-label">Brand</label>
               <select 
@@ -593,6 +795,7 @@ export default function App() {
               </select>
             </div>
 
+            {/* Custom Price Range */}
             <div className="filter-group">
               <label className="filter-label">Price Range (₹)</label>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -613,23 +816,21 @@ export default function App() {
               </div>
             </div>
 
+            {/* In Stock only */}
             <div className="filter-group">
-              <label className="filter-label">Stock Status</label>
               <label className="checkbox-label">
                 <input 
                   type="checkbox" 
                   checked={filters.filterInStockOnly}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setFilterInStockOnly(e.target.checked))}
                 />
-                <span>In Stock Only</span>
+                <span>Show in-stock items only</span>
               </label>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--light-border)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary-light)', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                <Info size={14} style={{ flexShrink: 0, color: 'var(--primary)' }} />
-                <span>Showing sourcing options for shops. End-customers are not permitted.</span>
-              </div>
+            <div className="trust-sidebar-widget">
+              <Info size={16} className="widget-icon" />
+              <span><strong>No Checkout System:</strong> MLX lists verified device inventories. Dial or WhatsApp shop owners directly to buy.</span>
             </div>
           </aside>
 
@@ -637,7 +838,7 @@ export default function App() {
           <section className="products-section">
             <div className="catalog-header">
               <span className="catalog-count">
-                Sourcing Inventory <span>({sortedProducts.length} items found)</span>
+                Available Devices <span>({sortedProducts.length} items found)</span>
               </span>
               
               <div className="catalog-sort">
@@ -647,7 +848,7 @@ export default function App() {
                   value={filters.sortBy}
                   onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setSortBy(e.target.value as any))}
                 >
-                  <option value="featured">Featured Sourcing</option>
+                  <option value="featured">Featured Listings</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
                   <option value="stock">Stock Available</option>
@@ -657,11 +858,12 @@ export default function App() {
 
             {sortedProducts.length > 0 ? (
               <div className="product-grid">
-                {sortedProducts.map(product => {
+                {/* Dynamically insert Center Banner in between products (after 3 items) */}
+                {sortedProducts.map((product, index) => {
                   const seller = getSellerShop(product.shopId);
                   const isOutOfStock = product.stock <= 0;
                   
-                  return (
+                  const renderCard = (
                     <article 
                       key={product.id} 
                       className="product-card"
@@ -698,7 +900,7 @@ export default function App() {
 
                         <div className="card-footer">
                           <div>
-                            <span className="card-price-label">Dealer wholesale price</span>
+                            <span className="card-price-label">Consumer Selling Price</span>
                             <div className="card-price">₹{product.price.toLocaleString('en-IN')}</div>
                           </div>
                           
@@ -709,14 +911,58 @@ export default function App() {
                       </div>
                     </article>
                   );
+
+                  // Inject Centre banner
+                  if (index === 3) {
+                    return (
+                      <React.Fragment key="center-banner-wrapper">
+                        <div className="centre-process-banner">
+                          <div className="process-guide-badge">
+                            <ShieldCheck size={14} />
+                            <span>Safe Buyer Guide</span>
+                          </div>
+                          <h3 className="process-headline">How to buy safely in 3 easy steps:</h3>
+                          <div className="process-steps">
+                            <div className="process-step-card">
+                              <div className="step-icon-wrapper">
+                                <MapPin size={18} />
+                              </div>
+                              <span className="step-card-num">Step 1</span>
+                              <p className="step-card-txt">Select your city and browse used gadgets near you</p>
+                            </div>
+                            
+                            <div className="process-step-card">
+                              <div className="step-icon-wrapper">
+                                <Phone size={18} />
+                              </div>
+                              <span className="step-card-num">Step 2</span>
+                              <p className="step-card-txt">Click WhatsApp or Call to contact the store directly</p>
+                            </div>
+                            
+                            <div className="process-step-card">
+                              <div className="step-icon-wrapper">
+                                <CheckCircle size={18} />
+                              </div>
+                              <span className="step-card-num">Step 3</span>
+                              <p className="step-card-txt">Meet dealer, physically inspect the gadget, and buy</p>
+                            </div>
+                          </div>
+                          <span className="process-footer">No hidden platform fees. No commissions. Pure peer-to-merchant deals.</span>
+                        </div>
+                        {renderCard}
+                      </React.Fragment>
+                    );
+                  }
+
+                  return renderCard;
                 })}
               </div>
             ) : (
               <div className="empty-state">
                 <HelpCircle size={48} className="empty-icon" />
-                <h3 className="empty-title">No matching sourcing inventory</h3>
+                <h3 className="empty-title">No used gadgets match these criteria</h3>
                 <p className="empty-desc">
-                  Try adjusting your search criteria, selecting a different category, or removing filters.
+                  Try clearing location/budget filters or searching for another device name.
                 </p>
                 <button className="btn-primary" onClick={() => dispatch(clearFilters())} style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}>
                   Clear Filters
@@ -736,7 +982,7 @@ export default function App() {
               <h2 className="profile-name">{activeShop?.name}</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, backgroundColor: 'var(--success-bg)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-sm)' }}>
                 <ShieldCheck size={12} />
-                <span>Verified Dealer Account</span>
+                <span>Verified Seller Shop</span>
               </div>
             </div>
 
@@ -748,8 +994,10 @@ export default function App() {
                 <div className="profile-stat-lbl">Active Listings</div>
               </div>
               <div className="profile-stat-box">
-                <div className="profile-stat-num">{activeShop?.rating}★</div>
-                <div className="profile-stat-lbl">Dealer Rating</div>
+                <div className="profile-stat-num">
+                  {leads.filter(l => l.shopId === activeShop?.id).length}
+                </div>
+                <div className="profile-stat-lbl">Total Leads</div>
               </div>
             </div>
 
@@ -759,8 +1007,18 @@ export default function App() {
                 onClick={() => dispatch(setDashboardTab('listings'))}
               >
                 <Layers size={16} />
-                <span>Manage Sourcing Listings</span>
+                <span>Manage Product Listings</span>
               </button>
+              
+              {/* New Leads Report Tab */}
+              <button 
+                className={`dash-menu-btn ${dashboardTab === 'leads' ? 'active' : ''}`}
+                onClick={() => dispatch(setDashboardTab('leads'))}
+              >
+                <MessageSquare size={16} />
+                <span>Leads & Performance Report</span>
+              </button>
+
               <button 
                 className={`dash-menu-btn ${dashboardTab === 'profile' ? 'active' : ''}`}
                 onClick={() => dispatch(setDashboardTab('profile'))}
@@ -768,9 +1026,10 @@ export default function App() {
                 <User size={16} />
                 <span>Edit Shop Profile</span>
               </button>
+              
               <button className="dash-menu-btn" onClick={() => dispatch(setActiveView('marketplace'))} style={{ borderTop: '1px solid var(--light-border)', marginTop: '0.5rem', paddingTop: '1rem' }}>
                 <Store size={16} />
-                <span>Back to Sourcing Marketplace</span>
+                <span>Back to Marketplace Directory</span>
               </button>
             </div>
           </aside>
@@ -779,10 +1038,10 @@ export default function App() {
             {dashboardTab === 'listings' ? (
               <div className="dashboard-panel">
                 <div className="panel-header">
-                  <h3 className="panel-title">My Sourcing Listings</h3>
+                  <h3 className="panel-title">My Used Devices Inventory</h3>
                   <button className="btn-primary" onClick={handleOpenAddProduct} style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}>
                     <Plus size={16} />
-                    <span>Add Sourcing Product</span>
+                    <span>List Used Product</span>
                   </button>
                 </div>
 
@@ -811,14 +1070,14 @@ export default function App() {
                         <div className="listing-actions">
                           <button 
                             className="btn-icon-action edit" 
-                            title="Edit listing details"
+                            title="Edit details"
                             onClick={() => handleOpenEditProduct(product)}
                           >
                             <Edit size={16} />
                           </button>
                           <button 
                             className="btn-icon-action delete" 
-                            title="Delete this listing"
+                            title="Remove listing"
                             onClick={() => handleDeleteListing(product.id)}
                           >
                             <Trash2 size={16} />
@@ -829,10 +1088,76 @@ export default function App() {
                   ) : (
                     <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary-light)' }}>
                       <Layers size={36} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                      <p>You have not listed any products for other shops to source yet.</p>
+                      <p>You have not listed any gadgets for customers to discover yet.</p>
                       <button className="btn-primary" onClick={handleOpenAddProduct} style={{ marginTop: '1rem', padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}>
-                        List Your First Product
+                        List Your First Device
                       </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : dashboardTab === 'leads' ? (
+              /* Leads Report Panel */
+              <div className="dashboard-panel">
+                <div className="panel-header">
+                  <h3 className="panel-title">Customer Lead Inquiries Report</h3>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary-light)' }}>
+                    Subscription Billing: <strong>Active (Per Lead Model)</strong>
+                  </div>
+                </div>
+
+                <div className="leads-metric-cards">
+                  <div className="metric-card">
+                    <span className="metric-num">{leads.filter(l => l.shopId === activeShop?.id).length}</span>
+                    <span className="metric-lbl">Total Sourced Leads</span>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-num">{leads.filter(l => l.shopId === activeShop?.id && l.contactType === 'whatsapp').length}</span>
+                    <span className="metric-lbl">WhatsApp Inquiries</span>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-num">{leads.filter(l => l.shopId === activeShop?.id && l.contactType === 'call').length}</span>
+                    <span className="metric-lbl">Direct Calls Logged</span>
+                  </div>
+                </div>
+
+                <div className="leads-list-container" style={{ marginTop: '2rem' }}>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Inquiry Log History</h4>
+                  
+                  {leads.filter(l => l.shopId === activeShop?.id).length > 0 ? (
+                    <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--light-bg)', textAlign: 'left', borderBottom: '1px solid var(--light-border)' }}>
+                          <th style={{ padding: '0.75rem' }}>Date & Time</th>
+                          <th style={{ padding: '0.75rem' }}>Product Device</th>
+                          <th style={{ padding: '0.75rem' }}>Customer (Buyer)</th>
+                          <th style={{ padding: '0.75rem' }}>Phone Details</th>
+                          <th style={{ padding: '0.75rem' }}>Inquiry Channel</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leads.filter(l => l.shopId === activeShop?.id).map((lead) => (
+                          <tr key={lead.id} style={{ borderBottom: '1px solid var(--light-border)' }}>
+                            <td style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <Calendar size={14} style={{ color: 'var(--text-secondary-light)' }} />
+                              <span>{new Date(lead.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            </td>
+                            <td style={{ padding: '0.75rem', fontWeight: 600 }}>{lead.productName}</td>
+                            <td style={{ padding: '0.75rem' }}>{lead.customerName}</td>
+                            <td style={{ padding: '0.75rem', fontFamily: 'monospace' }}>{lead.customerPhone}</td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span className={`lead-badge ${lead.contactType}`}>
+                                {lead.contactType === 'whatsapp' ? 'WhatsApp Clicks' : 'Direct Call Clicks'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary-light)' }}>
+                      <MessageSquare size={36} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>No customer contacts recorded yet. Make sure your shop location and contact info are accurate to attract clicks!</p>
                     </div>
                   )}
                 </div>
@@ -889,14 +1214,16 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">City *</label>
-                    <input 
-                      type="text" 
-                      className="form-input-text" 
-                      required
+                    <label className="form-label">City Location *</label>
+                    <select 
+                      className="form-select-box"
                       value={profileForm.city}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setProfileForm({...profileForm, city: e.target.value})}
-                    />
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setProfileForm({...profileForm, city: e.target.value})}
+                    >
+                      {CITIES.filter(c => c !== "All Cities").map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group">
@@ -906,7 +1233,7 @@ export default function App() {
                       value={profileForm.category}
                       onChange={(e: ChangeEvent<HTMLSelectElement>) => setProfileForm({...profileForm, category: e.target.value})}
                     >
-                      <option value="Mobiles & Accessories">Mobiles & Accessories</option>
+                      <option value="Mobiles & Tablets">Mobiles & Tablets</option>
                       <option value="Laptops & Accessories">Laptops & Accessories</option>
                       <option value="Smart Watches & Audio">Smart Watches & Audio</option>
                       <option value="All Tech Products">All Tech Products</option>
@@ -941,31 +1268,31 @@ export default function App() {
           <div className="footer-info">
             <div className="footer-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <img src="/logo.png" alt="MLX Market Logo" style={{ height: '32px', width: '32px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
-              <span>MLX <span>MARKET</span></span>
+              <span>MLX <span>DIRECT</span></span>
             </div>
             <p className="footer-desc">
-              MLX Market is an exclusive, closed-loop shop-to-shop (B2B) sourcing directory. It is not an e-commerce platform. There is no shopping cart, no checkout, and no customer directory.
+              MLX Direct is India's premium B2C used gadgets directory, connecting verified local dealers with consumers directly. We collect zero commission fees on user transactions.
             </p>
           </div>
 
           <div className="footer-links-col">
             <span className="footer-links-title">Quick Navigation</span>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setActiveView('marketplace')); dispatch(clearFilters()); }}>Sourcing Marketplace</a>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); handleOpenAddProduct(); }}>Add Product Listing</a>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>Dealer Hub Access</a>
+            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setActiveView('marketplace')); dispatch(clearFilters()); }}>Consumer Marketplace</a>
+            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); handleOpenAddProduct(); }}>List Used Gadget</a>
+            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setAuthRole('seller')); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>Verified Store Sign In</a>
           </div>
 
           <div className="footer-links-col">
             <span className="footer-links-title">Support & Guidelines</span>
-            <span className="footer-link">B2B Directory Policy</span>
-            <span className="footer-link">Anti-Spam Verification</span>
-            <span className="footer-link">Tech World Dealer Portal</span>
+            <span className="footer-link">MLX verification process</span>
+            <span className="footer-link">Anti-Fraud purchasing tips</span>
+            <span className="footer-link">Retail subscription model</span>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <span>&copy; {new Date().getFullYear()} MLX Market - Shop to Shop Sourcing Platform. All rights reserved.</span>
-          <span>Designed exclusively for verified electronics retail dealers.</span>
+          <span>&copy; {new Date().getFullYear()} MLX Direct - Shop to Customer Used Gadget Directory.</span>
+          <span>Connecting consumers with verified merchants near their city.</span>
         </div>
       </footer>
 
@@ -986,28 +1313,6 @@ export default function App() {
                     renderCategoryIcon(selectedProduct.category, "detail-visual-svg")
                   )}
                 </div>
-                <div className="thumbnail-row">
-                  {selectedProduct.images && selectedProduct.images.length > 0 ? (
-                    selectedProduct.images.map((img, idx) => (
-                      <button key={idx} className={`thumb-btn ${idx === 0 ? 'active' : ''}`}>
-                        <img src={img} alt="Product thumbnail" className="product-thumb-img" />
-                      </button>
-                    ))
-                  ) : (
-                    <>
-                      <button className="thumb-btn active">
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {renderCategoryIcon(selectedProduct.category, "card-visual-svg")}
-                        </div>
-                      </button>
-                      <button className="thumb-btn">
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                          <Layers size={20} />
-                        </div>
-                      </button>
-                    </>
-                  )}
-                </div>
               </div>
 
               <div className="detail-info">
@@ -1020,7 +1325,7 @@ export default function App() {
                 </div>
 
                 <div className="detail-price-row">
-                  <span className="detail-price-lbl">Dealer Sourcing Cost:</span>
+                  <span className="detail-price-lbl">Dealer Listing Price:</span>
                   <span className="detail-price">₹{selectedProduct.price.toLocaleString('en-IN')}</span>
                 </div>
 
@@ -1033,7 +1338,7 @@ export default function App() {
                 {/* Technical Specifications */}
                 {selectedProduct.specs && Object.keys(selectedProduct.specs).length > 0 && (
                   <div className="specs-section">
-                    <span className="specs-title">Device Specifications</span>
+                    <span className="specs-title">Device Specifics</span>
                     <table className="specs-table">
                       <tbody>
                         {Object.entries(selectedProduct.specs).map(([key, val]) => (
@@ -1052,38 +1357,38 @@ export default function App() {
                   const seller = getSellerShop(selectedProduct.shopId);
                   return (
                     <div className="dealer-info-card">
-                      <span className="dealer-card-title">Fulfillment Partner Shop</span>
+                      <span className="dealer-card-title">Sold by Store Partner</span>
                       <div className="dealer-card-header">
                         <span className="dealer-card-name">{seller.name}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--info)', fontSize: '0.75rem', fontWeight: 600 }}>
                           <ShieldCheck size={14} />
-                          <span>Verified Dealer</span>
+                          <span>Verified Store</span>
                         </div>
                       </div>
                       <div className="dealer-card-address">
                         <MapPin size={14} style={{ marginTop: '0.1rem' }} />
                         <span>{seller.address}, {seller.city}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
                         <span className="dealer-card-joined">Joined: {seller.joinedDate}</span>
-                        <span className="dealer-card-joined">Dealer Rating: <strong>{seller.rating} ★</strong></span>
+                        <span className="dealer-card-joined">Seller Rating: <strong>{seller.rating} ★</strong></span>
                       </div>
 
-                      {/* NO CART / Wishlist: Direct Connect B2B Actions only */}
-                      <div className="sourcing-actions" style={{ marginTop: '0.5rem' }}>
+                      {/* NO CART: Call/WhatsApp Direct Action dispatches a Lead */}
+                      <div className="sourcing-actions" style={{ marginTop: '0.75rem' }}>
                         <button 
                           className="btn-call"
                           onClick={() => handleCallSeller(selectedProduct, seller)}
                         >
                           <Phone size={16} />
-                          <span>Call Dealer</span>
+                          <span>Call Dealer Shop</span>
                         </button>
                         <button 
                           className="btn-whatsapp"
                           onClick={() => handleWhatsAppSeller(selectedProduct, seller)}
                         >
                           <Smartphone size={16} />
-                          <span>WhatsApp Dealer</span>
+                          <span>WhatsApp Merchant</span>
                         </button>
                       </div>
                     </div>
@@ -1105,7 +1410,7 @@ export default function App() {
 
             <div style={{ padding: '2.5rem' }}>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', borderBottom: '1px solid var(--light-border)', paddingBottom: '0.75rem' }}>
-                {productToEdit ? 'Edit Sourcing Product Listing' : 'List Product for Sourcing Discovery'}
+                {productToEdit ? 'Edit Used Device Details' : 'List Used Gadget for Selling'}
               </h3>
 
               <form onSubmit={handleProductSubmit} className="form-grid">
@@ -1115,7 +1420,7 @@ export default function App() {
                     type="text" 
                     className="form-input-text" 
                     required
-                    placeholder="e.g. iPhone 17 Pro (Grade A)"
+                    placeholder="e.g. iPhone 13 (Grade A)"
                     value={productForm.name}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, name: e.target.value})}
                   />
@@ -1127,14 +1432,14 @@ export default function App() {
                     type="text" 
                     className="form-input-text" 
                     required
-                    placeholder="e.g. Apple, Samsung, Dell"
+                    placeholder="e.g. Apple, Samsung, Xiaomi"
                     value={productForm.brand}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, brand: e.target.value})}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Product Sourcing Category *</label>
+                  <label className="form-label">Gadget Category *</label>
                   <select 
                     className="form-select-box"
                     value={productForm.category}
@@ -1149,19 +1454,19 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Sourcing Cost (₹) *</label>
+                  <label className="form-label">Consumer Selling Price (₹) *</label>
                   <input 
                     type="number" 
                     className="form-input-text" 
                     required
-                    placeholder="Dealer cost in INR"
+                    placeholder="Listing price in INR"
                     value={productForm.price}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, price: e.target.value})}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Stock Quantity Available *</label>
+                  <label className="form-label">Stock Units Available *</label>
                   <input 
                     type="number" 
                     className="form-input-text" 
@@ -1172,16 +1477,15 @@ export default function App() {
                   />
                 </div>
 
-                {/* Technical specifications depending on category */}
                 <div className="form-group">
                   <label className="form-label">
-                    {productForm.category === 'Mobiles' || productForm.category === 'Tablets' ? 'Storage Size' : 
+                    {productForm.category === 'Mobiles' || productForm.category === 'Tablets' ? 'Storage Capacity' : 
                      productForm.category === 'Laptops' ? 'Processor details' : 'Other Spec details'}
                   </label>
                   <input 
                     type="text" 
                     className="form-input-text" 
-                    placeholder={productForm.category === 'Mobiles' ? "e.g. 128GB" : "e.g. Core i7, White color"}
+                    placeholder={productForm.category === 'Mobiles' ? "e.g. 128GB" : "e.g. Core i5"}
                     value={productForm.specVal1}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, specVal1: e.target.value})}
                   />
@@ -1202,22 +1506,22 @@ export default function App() {
                 </div>
 
                 <div className="form-group full-width">
-                  <label className="form-label">Warranty details</label>
+                  <label className="form-label">Warranty / Shop Warranty details</label>
                   <input 
                     type="text" 
                     className="form-input-text" 
-                    placeholder="e.g. 6 Months Store Warranty, 1 Year Apple Warranty"
+                    placeholder="e.g. 3 Months Shop Warranty"
                     value={productForm.specVal3}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, specVal3: e.target.value})}
                   />
                 </div>
 
                 <div className="form-group full-width">
-                  <label className="form-label">Detailed Sourcing Description *</label>
+                  <label className="form-label">Detailed Device Description *</label>
                   <textarea 
                     className="form-textarea" 
                     required
-                    placeholder="Detail physical condition, screen state, battery, box availability, and bulk negotiation terms."
+                    placeholder="Include battery status, scuffs, color, charger details..."
                     value={productForm.description}
                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setProductForm({...productForm, description: e.target.value})}
                   ></textarea>
@@ -1233,7 +1537,7 @@ export default function App() {
                     Cancel
                   </button>
                   <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1.2rem' }}>
-                    {productToEdit ? 'Save Changes' : 'Submit Sourcing Product'}
+                    {productToEdit ? 'Save Changes' : 'Submit Device Listing'}
                   </button>
                 </div>
               </form>
@@ -1251,8 +1555,46 @@ export default function App() {
             </button>
 
             <div className="auth-header">
-              <h3 className="auth-title">Dealer Network Hub</h3>
-              <p className="auth-subtitle">Verify your shop credentials to trade with other dealers.</p>
+              <h3 className="auth-title">Welcome to MLX Direct</h3>
+              <p className="auth-subtitle">Verify your credentials to explore or trade verified used gadgets.</p>
+            </div>
+
+            {/* Custom Role Toggles */}
+            <div className="auth-role-toggles" style={{ display: 'flex', borderBottom: '1px solid var(--light-border)', marginBottom: '1.25rem' }}>
+              <button 
+                type="button"
+                className={`auth-role-btn ${authRole === 'customer' ? 'active' : ''}`}
+                onClick={() => dispatch(setAuthRole('customer'))}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  border: 'none',
+                  borderBottom: authRole === 'customer' ? '2px solid var(--primary)' : '2px solid transparent',
+                  background: 'none',
+                  fontWeight: 600,
+                  color: authRole === 'customer' ? 'var(--primary)' : 'var(--text-secondary-light)',
+                  cursor: 'pointer'
+                }}
+              >
+                For Customers
+              </button>
+              <button 
+                type="button"
+                className={`auth-role-btn ${authRole === 'seller' ? 'active' : ''}`}
+                onClick={() => dispatch(setAuthRole('seller'))}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  border: 'none',
+                  borderBottom: authRole === 'seller' ? '2px solid var(--primary)' : '2px solid transparent',
+                  background: 'none',
+                  fontWeight: 600,
+                  color: authRole === 'seller' ? 'var(--primary)' : 'var(--text-secondary-light)',
+                  cursor: 'pointer'
+                }}
+              >
+                For Shop Owners
+              </button>
             </div>
 
             <div className="auth-tabs">
@@ -1260,135 +1602,209 @@ export default function App() {
                 className={`auth-tab ${authTab === 'login' ? 'active' : ''}`}
                 onClick={() => dispatch(setAuthTab('login'))}
               >
-                Sign In Shop
+                Sign In
               </button>
               <button 
                 className={`auth-tab ${authTab === 'register' ? 'active' : ''}`}
                 onClick={() => dispatch(setAuthTab('register'))}
               >
-                Register Shop
+                Register Account
               </button>
             </div>
 
             {authTab === 'login' ? (
-              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Select Registered Sourcing Dealer Shop</label>
-                  <select 
-                    className="form-select-box"
-                    required
-                    value={loginShopId}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setLoginShopId(e.target.value)}
-                  >
-                    <option value="">-- Choose Shop to Simulate --</option>
-                    {shops.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.ownerName} - {s.city})</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                  <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  <span>Choose one of the demo shops above to log in and simulate adding, editing, and deleting inventory items.</span>
-                </div>
-
-                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Login to Sourcing Portal
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Shop Business Name *</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. Apex Electronics"
-                    value={registerForm.name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, name: e.target.value})}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Owner Name *</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. Vikram Mehta"
-                    value={registerForm.ownerName}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, ownerName: e.target.value})}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Mobile Number *</label>
-                  <input 
-                    type="tel" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. +91 98123 45678"
-                    value={registerForm.phone}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, phone: e.target.value})}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">WhatsApp Number *</label>
-                  <input 
-                    type="tel" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. 919812345678"
-                    value={registerForm.whatsapp}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, whatsapp: e.target.value})}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              authRole === 'seller' ? (
+                /* Seller Shop Login */
+                <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div className="form-group">
-                    <label className="form-label">City *</label>
+                    <label className="form-label">Select Registered Store Partner</label>
+                    <select 
+                      className="form-select-box"
+                      required
+                      value={loginShopId}
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setLoginShopId(e.target.value)}
+                    >
+                      <option value="">-- Choose Shop to Login --</option>
+                      {shops.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.ownerName} - {s.city})</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                    <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>Choose one of the verified shop listings above to enter the Store Dashboard and check your lead statistics.</span>
+                  </div>
+
+                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                    Login to Store Dashboard
+                  </button>
+                </form>
+              ) : (
+                /* Customer Login */
+                <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Enter Email / Phone to Sign In</label>
                     <input 
                       type="text" 
                       className="form-input-text" 
                       required
-                      placeholder="e.g. Mumbai"
-                      value={registerForm.city}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, city: e.target.value})}
+                      placeholder="e.g. arjun@gmail.com or enter any demo text"
+                      value={customerEmailInput}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerEmailInput(e.target.value)}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Category Segment</label>
-                    <select 
-                      className="form-select-box"
-                      value={registerForm.category}
-                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setRegisterForm({...registerForm, category: e.target.value})}
-                    >
-                      <option value="Mobiles & Accessories">Mobiles & Accessories</option>
-                      <option value="Laptops & Accessories">Laptops & Accessories</option>
-                      <option value="Smart Watches & Audio">Smart Watches & Audio</option>
-                      <option value="All Tech Products">All Tech Products</option>
-                    </select>
+
+                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                    <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>Demo customer logins: <strong>arjun@gmail.com</strong> or <strong>priya@yahoo.com</strong>. Feel free to type anything else to auto-create a user.</span>
                   </div>
-                </div>
 
-                <div className="form-group">
-                  <label className="form-label">Market Business Address *</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. Shop 102, Lamington Road"
-                    value={registerForm.address}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, address: e.target.value})}
-                  />
-                </div>
+                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                    Customer Sign In
+                  </button>
+                </form>
+              )
+            ) : (
+              authRole === 'seller' ? (
+                /* Seller Shop Registration */
+                <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Shop / Business Name *</label>
+                    <input 
+                      type="text" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. Tech World Dealers"
+                      value={registerForm.name}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, name: e.target.value})}
+                    />
+                  </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
-                  Create Sourcing Account
-                </button>
-              </form>
+                  <div className="form-group">
+                    <label className="form-label">Owner Name *</label>
+                    <input 
+                      type="text" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. Vikram Mehta"
+                      value={registerForm.ownerName}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, ownerName: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Shop Mobile *</label>
+                    <input 
+                      type="tel" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. +91 98123 45678"
+                      value={registerForm.phone}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, phone: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">WhatsApp Number *</label>
+                    <input 
+                      type="tel" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. 919812345678"
+                      value={registerForm.whatsapp}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, whatsapp: e.target.value})}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">City *</label>
+                      <select 
+                        className="form-select-box"
+                        value={registerForm.city}
+                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setRegisterForm({...registerForm, city: e.target.value})}
+                      >
+                        {CITIES.filter(c => c !== "All Cities").map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Main Business Category</label>
+                      <select 
+                        className="form-select-box"
+                        value={registerForm.category}
+                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setRegisterForm({...registerForm, category: e.target.value})}
+                      >
+                        <option value="Mobiles & Tablets">Mobiles & Tablets</option>
+                        <option value="Laptops & Accessories">Laptops & Accessories</option>
+                        <option value="Smart Watches & Audio">Smart Watches & Audio</option>
+                        <option value="All Tech Products">All Tech Products</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Shop Physical Address *</label>
+                    <input 
+                      type="text" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. Shop 102, Lamington Road"
+                      value={registerForm.address}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, address: e.target.value})}
+                    />
+                  </div>
+
+                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    Create Store Account
+                  </button>
+                </form>
+              ) : (
+                /* Customer Registration */
+                <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input 
+                      type="text" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. Arjun Nair"
+                      value={customerRegisterForm.name}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerRegisterForm({...customerRegisterForm, name: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email Address *</label>
+                    <input 
+                      type="email" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. arjun@gmail.com"
+                      value={customerRegisterForm.email}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerRegisterForm({...customerRegisterForm, email: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. +91 94460 55432"
+                      value={customerRegisterForm.phone}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerRegisterForm({...customerRegisterForm, phone: e.target.value})}
+                    />
+                  </div>
+
+                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    Create Customer Account
+                  </button>
+                </form>
+              )
             )}
           </div>
         </div>

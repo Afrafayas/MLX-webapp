@@ -1,10 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Product, Shop } from '../types';
-import { INITIAL_SHOPS, INITIAL_PRODUCTS } from '../data/mockData';
+import { Product, Shop, Lead } from '../types';
+import { INITIAL_SHOPS, INITIAL_PRODUCTS, INITIAL_LEADS } from '../data/mockData';
 
 interface ProductsState {
   items: Product[];
   shops: Shop[];
+  leads: Lead[];
   selectedProduct: Product | null;
   showAddEditModal: boolean;
   productToEdit: Product | null;
@@ -26,9 +27,18 @@ const getInitialProducts = (): Product[] => {
   return INITIAL_PRODUCTS;
 };
 
+const getInitialLeads = (): Lead[] => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('mlx_leads');
+    return saved ? JSON.parse(saved) : INITIAL_LEADS;
+  }
+  return INITIAL_LEADS;
+};
+
 const initialState: ProductsState = {
   items: getInitialProducts(),
   shops: getInitialShops(),
+  leads: getInitialLeads(),
   selectedProduct: null,
   showAddEditModal: false,
   productToEdit: null,
@@ -61,7 +71,6 @@ const productsSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.setItem('mlx_products', JSON.stringify(state.items));
       }
-      // Update selected product if it is the one edited
       if (state.selectedProduct && state.selectedProduct.id === action.payload.id) {
         state.selectedProduct = action.payload;
       }
@@ -81,6 +90,12 @@ const productsSlice = createSlice({
     setProductToEdit(state, action: PayloadAction<Product | null>) {
       state.productToEdit = action.payload;
     },
+    addLead(state, action: PayloadAction<Lead>) {
+      state.leads.unshift(action.payload);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mlx_leads', JSON.stringify(state.leads));
+      }
+    }
   },
 });
 
@@ -92,7 +107,8 @@ export const {
   deleteProduct, 
   setSelectedProduct, 
   setShowAddEditModal, 
-  setProductToEdit 
+  setProductToEdit,
+  addLead
 } = productsSlice.actions;
 
 export default productsSlice.reducer;

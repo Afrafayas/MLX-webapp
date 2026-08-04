@@ -12,6 +12,24 @@ export interface Shop {
   joinedDate: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export interface Lead {
+  id: string;
+  shopId: string;
+  productId: string;
+  productName: string;
+  customerName: string;
+  customerPhone: string;
+  contactType: 'call' | 'whatsapp';
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -34,12 +52,15 @@ export interface SourcingToast {
 export interface ReduxState {
   auth: {
     activeShop: Shop | null;
+    activeUser: User | null;
     showAuthModal: boolean;
     authTab: 'login' | 'register';
+    authRole: 'customer' | 'seller';
   };
   products: {
     items: Product[];
     shops: Shop[];
+    leads: Lead[];
     selectedProduct: Product | null;
     showAddEditModal: boolean;
     productToEdit: Product | null;
@@ -52,11 +73,13 @@ export interface ReduxState {
     filterMinPrice: string;
     filterMaxPrice: string;
     filterInStockOnly: boolean;
+    filterCity: string;
+    filterMaxBudget: string;
     sortBy: 'featured' | 'price-asc' | 'price-desc' | 'stock';
   };
   ui: {
     toasts: SourcingToast[];
     activeView: 'marketplace' | 'dashboard';
-    dashboardTab: 'listings' | 'profile';
+    dashboardTab: 'listings' | 'profile' | 'leads';
   };
 }
