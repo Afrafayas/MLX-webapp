@@ -79,7 +79,7 @@ export interface ReduxState {
   };
   ui: {
     toasts: SourcingToast[];
-    activeView: 'marketplace' | 'dashboard';
+    activeView: 'marketplace' | 'seller-dashboard' | 'customer-dashboard';
     dashboardTab: 'listings' | 'profile' | 'leads';
   };
 }

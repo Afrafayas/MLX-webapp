@@ -3,7 +3,7 @@ import { SourcingToast } from '../types';
 
 interface UiState {
   toasts: SourcingToast[];
-  activeView: 'marketplace' | 'dashboard';
+  activeView: 'marketplace' | 'seller-dashboard' | 'customer-dashboard';
   dashboardTab: 'listings' | 'profile' | 'leads';
 }
 
@@ -28,7 +28,7 @@ const uiSlice = createSlice({
     removeToast(state, action: PayloadAction<number>) {
       state.toasts = state.toasts.filter(t => t.id !== action.payload);
     },
-    setActiveView(state, action: PayloadAction<'marketplace' | 'dashboard'>) {
+    setActiveView(state, action: PayloadAction<'marketplace' | 'seller-dashboard' | 'customer-dashboard'>) {
       state.activeView = action.payload;
     },
     setDashboardTab(state, action: PayloadAction<'listings' | 'profile' | 'leads'>) {

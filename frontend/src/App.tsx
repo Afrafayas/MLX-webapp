@@ -8,6 +8,7 @@ import {
   Layers, 
   ShieldCheck, 
   ChevronRight, 
+  ChevronLeft,
   Plus, 
   Edit, 
   Trash2, 
@@ -66,6 +67,32 @@ import {
 import { CATEGORIES, CITIES, BUDGET_PRESETS, INITIAL_USERS } from './data/mockData';
 import { Product, Shop, Lead, User as CustomerUser } from './types';
 
+interface ToastItemProps {
+  toast: {
+    id: number;
+    message: string;
+    type: 'info' | 'success' | 'warning';
+  };
+  onClose: () => void;
+}
+
+function ToastItem({ toast, onClose }: ToastItemProps) {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000); // Auto-dismiss after 4 seconds
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast ${toast.type === 'success' ? 'success' : ''}`}>
+      {toast.type === 'success' ? <CheckCircle size={18} /> : <Info size={18} />}
+      <span>{toast.message}</span>
+      <button className="clear-filter-btn" style={{ marginLeft: '1rem', color: 'white' }} onClick={onClose}>×</button>
+    </div>
+  );
+}
+
 export default function App() {
   const dispatch = useAppDispatch();
 
@@ -76,7 +103,6 @@ export default function App() {
   const { toasts, activeView, dashboardTab } = useAppSelector(state => state.ui);
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
-  const [loginShopId, setLoginShopId] = React.useState('');
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [currentSlide, setCurrentSlide] = React.useState(0);
@@ -120,6 +146,27 @@ export default function App() {
     email: '',
     phone: ''
   });
+
+  // customer dashboard sub-navigation tab state
+  const [customerTab, setCustomerTab] = React.useState<'inquiries' | 'profile'>('inquiries');
+  
+  // customer profile editor form inputs state
+  const [custProfileForm, setCustProfileForm] = React.useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+
+  // Sync profile editor fields when the logged-in customer user changes
+  React.useEffect(() => {
+    if (activeUser) {
+      setCustProfileForm({
+        name: activeUser.name,
+        email: activeUser.email,
+        phone: activeUser.phone
+      });
+    }
+  }, [activeUser]);
 
   const [registerForm, setRegisterForm] = React.useState({
     name: '',
@@ -280,41 +327,70 @@ export default function App() {
   const handleLoginSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (authRole === 'seller') {
-      if (!loginShopId) return;
-      const shop = shops.find(s => s.id === loginShopId);
+      if (!customerEmailInput) return;
+      // Strip out any non-digits from input for comparison
+      const enteredPhone = customerEmailInput.replace(/\D/g, '').trim();
+      
+      if (!enteredPhone) {
+        alert("Please enter a valid phone number to sign in.");
+        return;
+      }
+
+      // Find shop by comparing the numeric digits of phone or whatsapp numbers
+      const shop = shops.find(s => {
+        const shopPhoneClean = s.phone.replace(/\D/g, '');
+        const shopWhatsappClean = s.whatsapp.replace(/\D/g, '');
+        return shopPhoneClean.endsWith(enteredPhone) || shopWhatsappClean.endsWith(enteredPhone) || s.phone.includes(enteredPhone);
+      });
+      
       if (shop) {
         dispatch(setActiveShop(shop));
         dispatch(setActiveUser(null)); // Logout user
         dispatch(setShowAuthModal(false));
         triggerToast(`Welcome back, ${shop.name}!`, 'success');
-        dispatch(setActiveView('dashboard'));
+        dispatch(setActiveView('seller-dashboard'));
         dispatch(setDashboardTab('listings'));
-        setLoginShopId('');
+        setCustomerEmailInput('');
+      } else {
+        alert(`No registered store partner found with phone number matching "${customerEmailInput}". Please check the phone number or register a new shop account.`);
       }
     } else {
       // Customer login logic
       if (!customerEmailInput) return;
-      const matchedUser = INITIAL_USERS.find(u => u.email.toLowerCase() === customerEmailInput.toLowerCase().trim());
+      const cleanInput = customerEmailInput.toLowerCase().trim();
+
+      // Retrieve dynamic registered users from localStorage
+      let customUsers: CustomerUser[] = [];
+      try {
+        const savedUsers = localStorage.getItem('mlx_registered_users');
+        if (savedUsers) customUsers = JSON.parse(savedUsers);
+      } catch (err) {
+        console.error(err);
+      }
+
+      const allUsers = [...INITIAL_USERS, ...customUsers];
+      const matchedUser = allUsers.find(u => u.email.toLowerCase() === cleanInput || u.phone.replace(/\D/g, '') === customerEmailInput.replace(/\D/g, '').trim());
+      
       if (matchedUser) {
         dispatch(setActiveUser(matchedUser));
         dispatch(setActiveShop(null)); // Logout seller
         dispatch(setShowAuthModal(false));
         triggerToast(`Welcome back, ${matchedUser.name}!`, 'success');
-        dispatch(setActiveView('marketplace'));
+        dispatch(setActiveView('customer-dashboard'));
         setCustomerEmailInput('');
       } else {
         // Fallback demo user creation
         const demoUser: CustomerUser = {
           id: `user-${Date.now()}`,
           name: "Guest Customer",
-          email: customerEmailInput,
-          phone: "+91 90000 00000"
+          email: customerEmailInput.includes('@') ? customerEmailInput.trim() : `${customerEmailInput.replace(/\D/g, '') || Date.now()}@mlx.com`,
+          phone: customerEmailInput.includes('@') ? "+91 90000 00000" : customerEmailInput.trim()
         };
         dispatch(setActiveUser(demoUser));
         dispatch(setActiveShop(null));
         dispatch(setShowAuthModal(false));
         triggerToast(`Signed in as ${demoUser.name} (${demoUser.email})`, 'success');
-        dispatch(setActiveView('marketplace'));
+        dispatch(setActiveView('customer-dashboard'));
         setCustomerEmailInput('');
       }
     }
@@ -346,7 +422,7 @@ export default function App() {
       dispatch(setActiveUser(null));
       dispatch(setShowAuthModal(false));
       triggerToast(`Shop "${registerForm.name}" registered and logged in!`, 'success');
-      dispatch(setActiveView('dashboard'));
+      dispatch(setActiveView('seller-dashboard'));
       
       // reset form
       setRegisterForm({
@@ -371,11 +447,22 @@ export default function App() {
         phone: customerRegisterForm.phone
       };
 
+      // Save new user profile dynamically to localStorage
+      let customUsers: CustomerUser[] = [];
+      try {
+        const savedUsers = localStorage.getItem('mlx_registered_users');
+        if (savedUsers) customUsers = JSON.parse(savedUsers);
+      } catch (err) {
+        console.error(err);
+      }
+      customUsers.push(newCust);
+      localStorage.setItem('mlx_registered_users', JSON.stringify(customUsers));
+
       dispatch(setActiveUser(newCust));
       dispatch(setActiveShop(null));
       dispatch(setShowAuthModal(false));
       triggerToast(`Welcome to MLX Market, ${customerRegisterForm.name}!`, 'success');
-      dispatch(setActiveView('marketplace'));
+      dispatch(setActiveView('customer-dashboard'));
 
       setCustomerRegisterForm({
         name: '',
@@ -548,11 +635,11 @@ export default function App() {
       {/* Toast Alert Popups */}
       <div className="toast-container">
         {toasts.map(toast => (
-          <div key={toast.id} className={`toast ${toast.type === 'success' ? 'success' : ''}`}>
-            {toast.type === 'success' ? <CheckCircle size={18} /> : <Info size={18} />}
-            <span>{toast.message}</span>
-            <button className="clear-filter-btn" style={{ marginLeft: '1rem', color: 'white' }} onClick={() => dispatch(removeToast(toast.id))}>×</button>
-          </div>
+          <ToastItem 
+            key={toast.id} 
+            toast={toast} 
+            onClose={() => dispatch(removeToast(toast.id))} 
+          />
         ))}
       </div>
 
@@ -657,8 +744,8 @@ export default function App() {
             {activeShop ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button 
-                  className={`action-btn sell-btn ${activeView === 'dashboard' ? 'active' : ''}`} 
-                  onClick={() => { dispatch(setActiveView('dashboard')); dispatch(setDashboardTab('listings')); }}
+                  className={`action-btn sell-btn ${activeView === 'seller-dashboard' ? 'active' : ''}`} 
+                  onClick={() => { dispatch(setActiveView('seller-dashboard')); dispatch(setDashboardTab('listings')); }}
                 >
                   <Store size={16} />
                   <span>Shop Dashboard</span>
@@ -669,11 +756,18 @@ export default function App() {
               </div>
             ) : activeUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button 
+                  className={`action-btn sell-btn ${activeView === 'customer-dashboard' ? 'active' : ''}`}
+                  onClick={() => dispatch(setActiveView('customer-dashboard'))}
+                >
+                  <Layers size={15} />
+                  <span>My Dashboard</span>
+                </button>
                 <span className="user-indicator">
                   <User size={14} />
                   <span>{activeUser.name} (Buyer)</span>
                 </span>
-                <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); }} title="Logout User">
+                <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); dispatch(setActiveView('marketplace')); }} title="Logout User">
                   <LogOut size={16} />
                 </button>
               </div>
@@ -971,8 +1065,238 @@ export default function App() {
             )}
           </section>
         </main>
+      ) : activeView === 'customer-dashboard' ? (
+        /* --- CUSTOMER DASHBOARD VIEW --- */
+        <main className="dashboard-view customer-dashboard-view">
+          <aside className="dashboard-sidebar">
+            <div className="dashboard-profile-hdr">
+              <div className="profile-avatar">
+                {activeUser ? activeUser.name.charAt(0) : 'C'}
+              </div>
+              <h2 className="profile-name">{activeUser?.name}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, backgroundColor: 'rgba(255, 111, 0, 0.1)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-sm)' }}>
+                <User size={12} />
+                <span>Verified Buyer Portal</span>
+              </div>
+            </div>
+
+            <div className="profile-stats-row">
+              <div className="profile-stat-box">
+                <div className="profile-stat-num">
+                  {leads.filter(l => activeUser && l.customerPhone === activeUser.phone).length}
+                </div>
+                <div className="profile-stat-lbl">Inquiries Sourced</div>
+              </div>
+            </div>
+
+            <div className="dashboard-menu">
+              <button 
+                className={`dash-menu-btn ${customerTab === 'inquiries' ? 'active' : ''}`}
+                onClick={() => setCustomerTab('inquiries')}
+              >
+                <MessageSquare size={16} />
+                <span>My Inquiries Log</span>
+              </button>
+              
+              <button 
+                className={`dash-menu-btn ${customerTab === 'profile' ? 'active' : ''}`}
+                onClick={() => setCustomerTab('profile')}
+              >
+                <User size={16} />
+                <span>My Profile Details</span>
+              </button>
+
+              <button 
+                className="dash-menu-btn exit-dash-btn"
+                onClick={() => dispatch(setActiveView('marketplace'))}
+                style={{ marginTop: 'auto', backgroundColor: 'transparent', border: '1px solid var(--light-border)', color: 'var(--text-primary-light)' }}
+              >
+                <ChevronLeft size={16} />
+                <span>Exit Dashboard</span>
+              </button>
+            </div>
+          </aside>
+
+          <section className="dashboard-content">
+            {customerTab === 'inquiries' ? (
+              /* Customer Inquiries Log */
+              <div className="dashboard-panel">
+                <div className="panel-header">
+                  <h3 className="panel-title">My Inquiries Log</h3>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary-light)' }}>
+                    Direct Peer-to-Merchant Connections
+                  </div>
+                </div>
+
+                <div className="leads-list-container" style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary-light)', marginBottom: '1.5rem' }}>
+                    Below is the log of verified used gadgets you inquired about. You can use these details to contact store partners again.
+                  </p>
+                  
+                  {leads.filter(l => activeUser && l.customerPhone === activeUser.phone).length > 0 ? (
+                    <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--light-bg)', textAlign: 'left', borderBottom: '1px solid var(--light-border)' }}>
+                          <th style={{ padding: '0.75rem' }}>Inquiry Date</th>
+                          <th style={{ padding: '0.75rem' }}>Used Device Model</th>
+                          <th style={{ padding: '0.75rem' }}>Store Partner</th>
+                          <th style={{ padding: '0.75rem' }}>Store Location</th>
+                          <th style={{ padding: '0.75rem' }}>Contact Channel</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leads.filter(l => activeUser && l.customerPhone === activeUser.phone).map((lead) => {
+                          const matchingProduct = products.find(p => p.id === lead.productId);
+                          const store = shops.find(s => s.id === lead.shopId);
+                          return (
+                            <tr key={lead.id} style={{ borderBottom: '1px solid var(--light-border)' }}>
+                              <td style={{ padding: '0.75rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <Calendar size={14} style={{ color: 'var(--text-secondary-light)' }} />
+                                  <span>{new Date(lead.createdAt).toLocaleDateString('en-IN', { dateStyle: 'short' })}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '0.75rem', fontWeight: 600 }}>
+                                {lead.productName}
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                {store ? store.name : "Local Store Partner"}
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                {store ? `${store.address}, ${store.city}` : "Kerala, India"}
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                <span className={`lead-badge ${lead.contactType}`}>
+                                  {lead.contactType === 'whatsapp' ? 'WhatsApp' : 'Direct Call'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                {store && matchingProduct ? (
+                                  <button 
+                                    className="action-btn sell-btn" 
+                                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                    onClick={() => {
+                                      if (lead.contactType === 'whatsapp') {
+                                        handleWhatsAppSeller(matchingProduct, store);
+                                      } else {
+                                        handleCallSeller(matchingProduct, store);
+                                      }
+                                    }}
+                                  >
+                                    <Phone size={11} />
+                                    <span>Contact Again</span>
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary-light)' }}>Unavailable</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary-light)' }}>
+                      <HelpCircle size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>You haven't made any inquiries yet. Click Call/WhatsApp on any used device to connect with local stores!</p>
+                      <button className="btn-primary" onClick={() => dispatch(setActiveView('marketplace'))} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+                        Browse Used Gadgets
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Customer Profile Edit */
+              <div className="dashboard-panel">
+                <div className="panel-header">
+                  <h3 className="panel-title">My Profile Details</h3>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!custProfileForm.name || !custProfileForm.email || !custProfileForm.phone) {
+                      alert("Please fill in all required fields.");
+                      return;
+                    }
+                    if (activeUser) {
+                      const updatedUser = {
+                        ...activeUser,
+                        name: custProfileForm.name,
+                        email: custProfileForm.email,
+                        phone: custProfileForm.phone
+                      };
+
+                      // Update user list in localStorage
+                      let customUsers: CustomerUser[] = [];
+                      try {
+                        const savedUsers = localStorage.getItem('mlx_registered_users');
+                        if (savedUsers) customUsers = JSON.parse(savedUsers);
+                      } catch (err) {
+                        console.error(err);
+                      }
+
+                      const userIdx = customUsers.findIndex(u => u.id === activeUser.id);
+                      if (userIdx !== -1) {
+                        customUsers[userIdx] = updatedUser;
+                      } else {
+                        customUsers.push(updatedUser);
+                      }
+                      localStorage.setItem('mlx_registered_users', JSON.stringify(customUsers));
+
+                      dispatch(setActiveUser(updatedUser));
+                      triggerToast("Profile updated successfully!", "success");
+                    }
+                  }} 
+                  className="form-grid"
+                >
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input 
+                      type="text" 
+                      className="form-input-text" 
+                      required
+                      value={custProfileForm.name}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustProfileForm({...custProfileForm, name: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email Address *</label>
+                    <input 
+                      type="email" 
+                      className="form-input-text" 
+                      required
+                      value={custProfileForm.email}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustProfileForm({...custProfileForm, email: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Mobile Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      className="form-input-text" 
+                      required
+                      value={custProfileForm.phone}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustProfileForm({...custProfileForm, phone: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-actions-row full-width" style={{ marginTop: '1rem' }}>
+                    <button type="submit" className="btn-primary" style={{ padding: '0.6rem 1.2rem' }}>
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </section>
+        </main>
       ) : (
-        /* --- DASHBOARD VIEW --- */
+        /* --- SELLER DASHBOARD VIEW --- */
         <main className="dashboard-view">
           <aside className="dashboard-sidebar">
             <div className="dashboard-profile-hdr">
@@ -1613,58 +1937,34 @@ export default function App() {
             </div>
 
             {authTab === 'login' ? (
-              authRole === 'seller' ? (
-                /* Seller Shop Login */
-                <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Select Registered Store Partner</label>
-                    <select 
-                      className="form-select-box"
-                      required
-                      value={loginShopId}
-                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setLoginShopId(e.target.value)}
-                    >
-                      <option value="">-- Choose Shop to Login --</option>
-                      {shops.map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.ownerName} - {s.city})</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                    <span>Choose one of the verified shop listings above to enter the Store Dashboard and check your lead statistics.</span>
-                  </div>
+              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label">
+                    {authRole === 'seller' ? 'Enter Registered Shop Phone Number *' : 'Enter Email / Phone to Sign In *'}
+                  </label>
+                  <input 
+                    type="text" 
+                    className="form-input-text" 
+                    required
+                    placeholder={authRole === 'seller' ? "e.g. 98765 43210 or 9812345678" : "e.g. arjun@gmail.com or enter any demo text"}
+                    value={customerEmailInput}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerEmailInput(e.target.value)}
+                  />
+                </div>
 
-                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                    Login to Store Dashboard
-                  </button>
-                </form>
-              ) : (
-                /* Customer Login */
-                <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Enter Email / Phone to Sign In</label>
-                    <input 
-                      type="text" 
-                      className="form-input-text" 
-                      required
-                      placeholder="e.g. arjun@gmail.com or enter any demo text"
-                      value={customerEmailInput}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerEmailInput(e.target.value)}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary-light)', backgroundColor: 'var(--light-bg)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                  <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                  {authRole === 'seller' ? (
+                    <span>Demo shop logins: Enter any mock shop phone, e.g. <strong>9876543210</strong> (Kochi Gadgets) or <strong>9812345678</strong> (Calicut Refurb).</span>
+                  ) : (
                     <span>Demo customer logins: <strong>arjun@gmail.com</strong> or <strong>priya@yahoo.com</strong>. Feel free to type anything else to auto-create a user.</span>
-                  </div>
+                  )}
+                </div>
 
-                  <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                    Customer Sign In
-                  </button>
-                </form>
-              )
+                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  {authRole === 'seller' ? 'Login to Store Dashboard' : 'Customer Sign In'}
+                </button>
+              </form>
             ) : (
               authRole === 'seller' ? (
                 /* Seller Shop Registration */
