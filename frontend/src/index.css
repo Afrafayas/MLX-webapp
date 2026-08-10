@@ -2578,6 +2578,11 @@ a {
     display: none !important;
   }
 
+  /* Hide search bar category dropdown wrapper on mobile */
+  .header-search .custom-select-wrapper {
+    display: none !important;
+  }
+
   /* Make header action buttons smaller and circular/pill-shaped */
   .header-actions .action-btn {
     padding: 0.5rem !important;
@@ -2687,21 +2692,7 @@ a {
     overflow: hidden;
   }
 
-  .header-search .custom-select-wrapper {
-    width: 100px !important;
-    min-width: 100px !important;
-    flex-shrink: 0 !important;
-  }
 
-  .header-search .custom-select-trigger {
-    border: none !important;
-    border-right: 1px solid var(--dark-border) !important;
-    border-radius: 0 !important;
-    padding: 0.5rem 0.4rem !important;
-    font-size: 0.75rem !important;
-    height: 38px !important;
-    background: transparent !important;
-  }
 
   .header-search .search-input {
     border: none !important;
