@@ -67,6 +67,78 @@ import {
 import { CATEGORIES, CITIES, BUDGET_PRESETS, INITIAL_USERS } from './data/mockData';
 import { Product, Shop, Lead, User as CustomerUser } from './types';
 
+interface CustomSelectProps {
+  value: string;
+  onChange: (val: string) => void;
+  options: { label: string; value: string }[] | string[];
+  placeholder?: string;
+  icon?: React.ReactNode;
+}
+
+function CustomSelect({ value, onChange, options, placeholder, icon }: CustomSelectProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const formattedOptions = options.map(opt => {
+    if (typeof opt === 'string') {
+      return { label: opt, value: opt };
+    }
+    return opt;
+  });
+
+  const selectedOption = formattedOptions.find(o => o.value === value) || { label: value || placeholder || "", value };
+
+  return (
+    <div className="custom-select-wrapper" ref={dropdownRef}>
+      <div 
+        className={`custom-select-trigger ${isOpen ? 'open' : ''}`} 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="trigger-content">
+          {icon && <span className="trigger-icon">{icon}</span>}
+          <span>{selectedOption.label}</span>
+        </div>
+        <span className="chevron-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
+      </div>
+      
+      {isOpen && (
+        <div className="custom-select-dropdown">
+          {formattedOptions.map(opt => {
+            const isSelected = opt.value === value;
+            return (
+              <div 
+                key={opt.value} 
+                className={`custom-select-option ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {isSelected && <span className="option-check">✓</span>}
+                <span className="option-label">{opt.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface ToastItemProps {
   toast: {
     id: number;
@@ -657,16 +729,11 @@ export default function App() {
           {/* Search bar inside header with Instagram-Style dropdown overlay */}
           <div className="header-search-container" style={{ position: 'relative', flex: 1, maxWidth: '550px', zIndex: isSearchFocused ? 102 : 1 }}>
             <div className="header-search" style={{ position: 'relative', zIndex: isSearchFocused ? 105 : 1 }}>
-              <select 
-                className="search-select"
+              <CustomSelect 
                 value={filters.searchCategory}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setSearchCategory(e.target.value))}
-              >
-                <option value="All Categories">All Categories</option>
-                {CATEGORIES.filter(c => c !== "All Categories").map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                onChange={(val) => dispatch(setSearchCategory(val))}
+                options={CATEGORIES}
+              />
               <input 
                 type="text" 
                 className="search-input"
@@ -849,44 +916,34 @@ export default function App() {
             {/* City Selector */}
             <div className="filter-group">
               <label className="filter-label">Select City</label>
-              <select 
-                className="filter-select"
+              <CustomSelect 
                 value={filters.filterCity}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setFilterCity(e.target.value))}
-              >
-                {CITIES.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
+                onChange={(val) => dispatch(setFilterCity(val))}
+                options={CITIES}
+              />
             </div>
 
             {/* Budget Presets */}
             <div className="filter-group">
               <label className="filter-label">Max Budget Limit</label>
-              <select 
-                className="filter-select"
+              <CustomSelect 
                 value={filters.filterMaxBudget}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setFilterMaxBudget(e.target.value))}
-              >
-                {BUDGET_PRESETS.map(budget => (
-                  <option key={budget} value={budget}>{budget}</option>
-                ))}
-              </select>
+                onChange={(val) => dispatch(setFilterMaxBudget(val))}
+                options={BUDGET_PRESETS}
+              />
             </div>
 
             {/* Brand Filter */}
             <div className="filter-group">
               <label className="filter-label">Brand</label>
-              <select 
-                className="filter-select"
+              <CustomSelect 
                 value={filters.filterBrand}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setFilterBrand(e.target.value))}
-              >
-                <option value="">All Brands</option>
-                {uniqueBrands.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
+                onChange={(val) => dispatch(setFilterBrand(val))}
+                options={[
+                  { label: "All Brands", value: "" },
+                  ...uniqueBrands.map(b => ({ label: b, value: b }))
+                ]}
+              />
             </div>
 
             {/* Custom Price Range */}
@@ -937,16 +994,16 @@ export default function App() {
               
               <div className="catalog-sort">
                 <span>Sort by:</span>
-                <select 
-                  className="sort-select"
-                  value={filters.sortBy}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => dispatch(setSortBy(e.target.value as any))}
-                >
-                  <option value="featured">Featured Listings</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="stock">Stock Available</option>
-                </select>
+              <CustomSelect 
+                value={filters.sortBy}
+                onChange={(val) => dispatch(setSortBy(val as any))}
+                options={[
+                  { label: "Featured Listings", value: "featured" },
+                  { label: "Price: Low to High", value: "price-asc" },
+                  { label: "Price: High to Low", value: "price-desc" },
+                  { label: "Stock Available", value: "stock" }
+                ]}
+              />
               </div>
             </div>
 
