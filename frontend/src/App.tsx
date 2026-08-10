@@ -817,7 +817,7 @@ export default function App() {
                   onClick={() => { navigate('/seller-dashboard'); dispatch(setDashboardTab('listings')); }}
                 >
                   <Store size={16} />
-                  <span>Shop Dashboard</span>
+                  <span className="nav-btn-text">Shop Dashboard</span>
                 </button>
                 <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); navigate('/'); }} title="Logout Shop">
                   <LogOut size={16} />
@@ -830,11 +830,11 @@ export default function App() {
                   onClick={() => navigate('/customer-dashboard')}
                 >
                   <Layers size={15} />
-                  <span>My Dashboard</span>
+                  <span className="nav-btn-text">My Dashboard</span>
                 </button>
                 <span className="user-indicator">
                   <User size={14} />
-                  <span>{activeUser.name} (Buyer)</span>
+                  <span className="nav-btn-text user-badge-text">{activeUser.name} (Buyer)</span>
                 </span>
                 <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); navigate('/'); }} title="Logout User">
                   <LogOut size={16} />
@@ -844,7 +844,7 @@ export default function App() {
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="action-btn sell-btn" onClick={() => { dispatch(setAuthRole('customer')); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>
                   <LogIn size={15} />
-                  <span>Sign In / Register</span>
+                  <span className="nav-btn-text">Sign In</span>
                 </button>
               </div>
             )}
