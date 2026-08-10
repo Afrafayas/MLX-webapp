@@ -48,7 +48,6 @@ import {
 } from './store/productsSlice';
 import { 
   setSearchQuery, 
-  setSearchCategory, 
   setSelectedCategory, 
   setFilterBrand, 
   setFilterMinPrice, 
@@ -731,11 +730,6 @@ export default function App() {
           {/* Search bar inside header with Instagram-Style dropdown overlay */}
           <div className="header-search-container" style={{ position: 'relative', flex: 1, maxWidth: '550px', zIndex: isSearchFocused ? 102 : 1 }}>
             <div className="header-search" style={{ position: 'relative', zIndex: isSearchFocused ? 105 : 1 }}>
-              <CustomSelect 
-                value={filters.searchCategory}
-                onChange={(val) => dispatch(setSearchCategory(val))}
-                options={CATEGORIES}
-              />
               <input 
                 type="text" 
                 className="search-input"
@@ -743,6 +737,7 @@ export default function App() {
                 value={filters.searchQuery}
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setSearchQuery(e.target.value))}
+                autoComplete="off"
               />
               <button className="search-btn" onClick={() => { setIsSearchFocused(false); navigate('/'); }}>
                 <Search size={16} />
