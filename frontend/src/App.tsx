@@ -27,6 +27,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from './store';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { 
   setActiveShop, 
   setActiveUser,
@@ -61,7 +62,6 @@ import {
 import { 
   addToast, 
   removeToast, 
-  setActiveView, 
   setDashboardTab 
 } from './store/uiSlice';
 import { CATEGORIES, CITIES, BUDGET_PRESETS, INITIAL_USERS } from './data/mockData';
@@ -167,12 +167,14 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 
 export default function App() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // --- REDUX SELECTORS ---
   const { activeShop, activeUser, authRole, showAuthModal, authTab } = useAppSelector(state => state.auth);
   const { items: products, shops, leads, selectedProduct, showAddEditModal, productToEdit } = useAppSelector(state => state.products);
   const filters = useAppSelector(state => state.filters);
-  const { toasts, activeView, dashboardTab } = useAppSelector(state => state.ui);
+  const { toasts, dashboardTab } = useAppSelector(state => state.ui);
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
@@ -420,7 +422,7 @@ export default function App() {
         dispatch(setActiveUser(null)); // Logout user
         dispatch(setShowAuthModal(false));
         triggerToast(`Welcome back, ${shop.name}!`, 'success');
-        dispatch(setActiveView('seller-dashboard'));
+        navigate('/seller-dashboard');
         dispatch(setDashboardTab('listings'));
         setCustomerEmailInput('');
       } else {
@@ -448,7 +450,7 @@ export default function App() {
         dispatch(setActiveShop(null)); // Logout seller
         dispatch(setShowAuthModal(false));
         triggerToast(`Welcome back, ${matchedUser.name}!`, 'success');
-        dispatch(setActiveView('customer-dashboard'));
+        navigate('/customer-dashboard');
         setCustomerEmailInput('');
       } else {
         // Fallback demo user creation
@@ -462,7 +464,7 @@ export default function App() {
         dispatch(setActiveShop(null));
         dispatch(setShowAuthModal(false));
         triggerToast(`Signed in as ${demoUser.name} (${demoUser.email})`, 'success');
-        dispatch(setActiveView('customer-dashboard'));
+        navigate('/customer-dashboard');
         setCustomerEmailInput('');
       }
     }
@@ -494,7 +496,7 @@ export default function App() {
       dispatch(setActiveUser(null));
       dispatch(setShowAuthModal(false));
       triggerToast(`Shop "${registerForm.name}" registered and logged in!`, 'success');
-      dispatch(setActiveView('seller-dashboard'));
+      navigate('/seller-dashboard');
       
       // reset form
       setRegisterForm({
@@ -534,7 +536,7 @@ export default function App() {
       dispatch(setActiveShop(null));
       dispatch(setShowAuthModal(false));
       triggerToast(`Welcome to MLX Market, ${customerRegisterForm.name}!`, 'success');
-      dispatch(setActiveView('customer-dashboard'));
+      navigate('/customer-dashboard');
 
       setCustomerRegisterForm({
         name: '',
@@ -699,7 +701,7 @@ export default function App() {
       dispatch(setFilterCity(value));
     }
     setIsSearchFocused(false);
-    dispatch(setActiveView('marketplace'));
+    navigate('/');
   };
 
   return (
@@ -718,7 +720,7 @@ export default function App() {
       {/* --- SITE HEADER --- */}
       <header className="site-header">
         <div className="header-container">
-          <div className="logo-section" onClick={() => { dispatch(setActiveView('marketplace')); dispatch(clearFilters()); }}>
+          <div className="logo-section" onClick={() => { navigate('/'); dispatch(clearFilters()); }}>
             <img src="/logo.png" alt="MLX Market Logo" className="logo-img" />
             <div className="logo-text">
               <span className="logo-title">MLX <span>DIRECT</span></span>
@@ -742,7 +744,7 @@ export default function App() {
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setSearchQuery(e.target.value))}
               />
-              <button className="search-btn" onClick={() => { setIsSearchFocused(false); dispatch(setActiveView('marketplace')); }}>
+              <button className="search-btn" onClick={() => { setIsSearchFocused(false); navigate('/'); }}>
                 <Search size={16} />
                 <span>Search</span>
               </button>
@@ -762,7 +764,7 @@ export default function App() {
                         dispatch(setFilterCity('Kochi'));
                         triggerToast("📍 Geolocation active: Selected Kochi as nearest city!", "success");
                         setIsSearchFocused(false);
-                        dispatch(setActiveView('marketplace'));
+                        navigate('/');
                       }}
                     >
                       <MapPin size={13} style={{ flexShrink: 0 }} />
@@ -811,21 +813,21 @@ export default function App() {
             {activeShop ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button 
-                  className={`action-btn sell-btn ${activeView === 'seller-dashboard' ? 'active' : ''}`} 
-                  onClick={() => { dispatch(setActiveView('seller-dashboard')); dispatch(setDashboardTab('listings')); }}
+                  className={`action-btn sell-btn ${location.pathname === '/seller-dashboard' ? 'active' : ''}`} 
+                  onClick={() => { navigate('/seller-dashboard'); dispatch(setDashboardTab('listings')); }}
                 >
                   <Store size={16} />
                   <span>Shop Dashboard</span>
                 </button>
-                <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); dispatch(setActiveView('marketplace')); }} title="Logout Shop">
+                <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); navigate('/'); }} title="Logout Shop">
                   <LogOut size={16} />
                 </button>
               </div>
             ) : activeUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button 
-                  className={`action-btn sell-btn ${activeView === 'customer-dashboard' ? 'active' : ''}`}
-                  onClick={() => dispatch(setActiveView('customer-dashboard'))}
+                  className={`action-btn sell-btn ${location.pathname === '/customer-dashboard' ? 'active' : ''}`}
+                  onClick={() => navigate('/customer-dashboard')}
                 >
                   <Layers size={15} />
                   <span>My Dashboard</span>
@@ -834,7 +836,7 @@ export default function App() {
                   <User size={14} />
                   <span>{activeUser.name} (Buyer)</span>
                 </span>
-                <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); dispatch(setActiveView('marketplace')); }} title="Logout User">
+                <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); navigate('/'); }} title="Logout User">
                   <LogOut size={16} />
                 </button>
               </div>
@@ -859,7 +861,7 @@ export default function App() {
               className={`cat-tab ${filters.selectedCategory === cat ? 'active' : ''}`}
               onClick={() => {
                 dispatch(setSelectedCategory(cat));
-                dispatch(setActiveView('marketplace'));
+                navigate('/');
               }}
             >
               {cat}
@@ -869,7 +871,7 @@ export default function App() {
       </div>
 
       {/* --- TOP DYNAMIC SLIDER (Marketplace Main View Only) --- */}
-      {activeView === 'marketplace' && (
+      {location.pathname === '/' && (
         <section className="slider-banner-section" style={{ background: slides[currentSlide].bgColor }}>
           <div className="slider-banner-container">
             <div className="slider-content-pane">
@@ -904,8 +906,9 @@ export default function App() {
       )}
 
       {/* --- MAIN MARKETPLACE / DASHBOARD VIEWS --- */}
-      {activeView === 'marketplace' ? (
-        <main className="main-content" id="marketplace-grid">
+      <Routes>
+        <Route path="/" element={
+          <main className="main-content" id="marketplace-grid">
           {/* Sidebar Filters */}
           <aside className="sidebar-filters">
             <div className="filter-title-bar">
@@ -1122,7 +1125,9 @@ export default function App() {
             )}
           </section>
         </main>
-      ) : activeView === 'customer-dashboard' ? (
+      } />
+      
+      <Route path="/customer-dashboard" element={
         /* --- CUSTOMER DASHBOARD VIEW --- */
         <main className="dashboard-view customer-dashboard-view">
           <aside className="dashboard-sidebar">
@@ -1165,7 +1170,7 @@ export default function App() {
 
               <button 
                 className="dash-menu-btn exit-dash-btn"
-                onClick={() => dispatch(setActiveView('marketplace'))}
+                onClick={() => navigate('/')}
                 style={{ marginTop: 'auto', backgroundColor: 'transparent', border: '1px solid var(--light-border)', color: 'var(--text-primary-light)' }}
               >
                 <ChevronLeft size={16} />
@@ -1257,7 +1262,7 @@ export default function App() {
                     <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary-light)' }}>
                       <HelpCircle size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
                       <p>You haven't made any inquiries yet. Click Call/WhatsApp on any used device to connect with local stores!</p>
-                      <button className="btn-primary" onClick={() => dispatch(setActiveView('marketplace'))} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+                      <button className="btn-primary" onClick={() => navigate('/')} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
                         Browse Used Gadgets
                       </button>
                     </div>
@@ -1352,7 +1357,9 @@ export default function App() {
             )}
           </section>
         </main>
-      ) : (
+      } />
+      
+      <Route path="/seller-dashboard" element={
         /* --- SELLER DASHBOARD VIEW --- */
         <main className="dashboard-view">
           <aside className="dashboard-sidebar">
@@ -1408,7 +1415,7 @@ export default function App() {
                 <span>Edit Shop Profile</span>
               </button>
               
-              <button className="dash-menu-btn" onClick={() => dispatch(setActiveView('marketplace'))} style={{ borderTop: '1px solid var(--light-border)', marginTop: '0.5rem', paddingTop: '1rem' }}>
+              <button className="dash-menu-btn" onClick={() => navigate('/')} style={{ borderTop: '1px solid var(--light-border)', marginTop: '0.5rem', paddingTop: '1rem' }}>
                 <Store size={16} />
                 <span>Back to Marketplace Directory</span>
               </button>
@@ -1641,7 +1648,7 @@ export default function App() {
             )}
           </section>
         </main>
-      )}
+      } /></Routes>
 
       {/* --- FOOTER --- */}
       <footer className="site-footer">
@@ -1658,7 +1665,7 @@ export default function App() {
 
           <div className="footer-links-col">
             <span className="footer-links-title">Quick Navigation</span>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setActiveView('marketplace')); dispatch(clearFilters()); }}>Consumer Marketplace</a>
+            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); navigate('/'); dispatch(clearFilters()); }}>Consumer Marketplace</a>
             <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); handleOpenAddProduct(); }}>List Used Gadget</a>
             <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setAuthRole('seller')); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>Verified Store Sign In</a>
           </div>
