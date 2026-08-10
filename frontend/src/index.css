@@ -2460,3 +2460,196 @@ a {
   color: #FFFFFF;
   border-color: #DB2777;
 }
+
+/* --- RESPONSIVE MEDIA QUERIES --- */
+
+/* 1. Tablet & Small Laptops (max-width: 992px) */
+@media (max-width: 992px) {
+  /* Stack Marketplace Filters on top */
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .sidebar-filters {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .filter-title-bar {
+    grid-column: 1 / -1;
+  }
+
+  .trust-sidebar-widget {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 2. Mobile Views & Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Header Container */
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .header-search-container {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Slider Banner Stacking */
+  .slider-banner-container {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
+  }
+
+  .slider-content-pane {
+    max-width: 100%;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slider-image-pane {
+    display: none; /* Hide large floating image to save height */
+  }
+
+  /* Dashboard View Stacking */
+  .dashboard-view {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--light-border);
+    padding: 1.25rem;
+    position: static;
+  }
+
+  .dashboard-profile-hdr {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+    margin-bottom: 1rem;
+  }
+
+  .profile-stats-row {
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .dashboard-menu .exit-dash-btn {
+    margin-top: 0;
+  }
+
+  .dashboard-content {
+    padding: 1.25rem;
+  }
+
+  /* Table responsiveness */
+  .leads-list-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .leads-table {
+    min-width: 600px;
+  }
+}
+
+/* 3. Small Mobile Views (max-width: 480px) */
+@media (max-width: 480px) {
+  /* Search Box adjust */
+  .header-search {
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    border: none;
+    background-color: transparent;
+    gap: 0.35rem;
+  }
+
+  .search-select {
+    border-right: none;
+    border: 1px solid var(--dark-border);
+    background-color: var(--dark-card);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    width: 100%;
+  }
+
+  .search-input {
+    border: 1px solid var(--dark-border);
+    background-color: var(--dark-card);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    padding: 0.6rem;
+  }
+
+  /* Product Catalog grid columns */
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form layouts */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Auth modal adjustments */
+  .auth-modal-content {
+    width: 95% !important;
+    margin: 10px auto;
+    padding: 1.25rem !important;
+  }
+
+  .auth-role-tabs {
+    flex-direction: column;
+  }
+
+  .auth-role-tab {
+    width: 100% !important;
+  }
+
+  /* Header action buttons typography */
+  .logo-title {
+    font-size: 1.2rem;
+  }
+
+  .logo-subtitle {
+    display: none;
+  }
+}
