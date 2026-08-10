@@ -816,7 +816,10 @@ export default function App() {
                 </button>
                 <span className="user-indicator">
                   <Store size={14} />
-                  <span className="nav-btn-text user-badge-text">{activeShop.name} (Seller)</span>
+                  <span className="user-badge-text-container">
+                    <span className="user-badge-name">{activeShop.name}</span>
+                    <span className="user-badge-role"> (Seller)</span>
+                  </span>
                 </span>
                 <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); navigate('/'); }} title="Logout Shop">
                   <LogOut size={16} />
@@ -833,7 +836,10 @@ export default function App() {
                 </button>
                 <span className="user-indicator">
                   <User size={14} />
-                  <span className="nav-btn-text user-badge-text">{activeUser.name} (Buyer)</span>
+                  <span className="user-badge-text-container">
+                    <span className="user-badge-name">{activeUser.name}</span>
+                    <span className="user-badge-role"> (Buyer)</span>
+                  </span>
                 </span>
                 <button className="action-btn" onClick={() => { dispatch(setActiveUser(null)); triggerToast("Logged out successfully."); navigate('/'); }} title="Logout User">
                   <LogOut size={16} />

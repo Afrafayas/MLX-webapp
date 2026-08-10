@@ -2583,6 +2583,32 @@ a {
     display: none !important;
   }
 
+  /* Truncated user/shop indicator badge for mobile layout */
+  .user-badge-role {
+    display: none !important;
+  }
+
+  .user-badge-name {
+    display: inline-block !important;
+    max-width: 85px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    vertical-align: middle !important;
+  }
+
+  .user-indicator {
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.25rem !important;
+    border-radius: var(--radius-pill) !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-right: 0.2rem !important;
+  }
+
   /* Make header action buttons smaller and circular/pill-shaped */
   .header-actions .action-btn {
     padding: 0.5rem !important;
