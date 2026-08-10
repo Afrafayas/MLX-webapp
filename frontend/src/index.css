@@ -2539,6 +2539,14 @@ a {
     border-radius: 50% !important;
   }
 
+  /* Search explore overlay constraints on mobile */
+  .search-explore-overlay {
+    max-height: 180px !important;
+    overflow-y: auto !important;
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.4rem !important;
+  }
+
   /* Slider Banner Stacking */
   .slider-banner-container {
     flex-direction: column;
