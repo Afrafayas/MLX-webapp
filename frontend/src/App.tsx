@@ -814,6 +814,10 @@ export default function App() {
                   <Store size={16} />
                   <span className="nav-btn-text">Shop Dashboard</span>
                 </button>
+                <span className="user-indicator">
+                  <Store size={14} />
+                  <span className="nav-btn-text user-badge-text">{activeShop.name} (Seller)</span>
+                </span>
                 <button className="action-btn" onClick={() => { dispatch(setActiveShop(null)); triggerToast("Seller logged out."); navigate('/'); }} title="Logout Shop">
                   <LogOut size={16} />
                 </button>
