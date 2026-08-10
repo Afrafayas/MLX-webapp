@@ -852,23 +852,25 @@ export default function App() {
         </div>
       </header>
 
-      {/* Category Sub-navigation */}
-      <div className="category-bar">
-        <div className="category-container">
-          {CATEGORIES.map(cat => (
-            <button 
-              key={cat} 
-              className={`cat-tab ${filters.selectedCategory === cat ? 'active' : ''}`}
-              onClick={() => {
-                dispatch(setSelectedCategory(cat));
-                navigate('/');
-              }}
-            >
-              {cat}
-            </button>
-          ))}
+      {/* Category Sub-navigation (Only on Marketplace Catalog Home) */}
+      {location.pathname === '/' && (
+        <div className="category-bar">
+          <div className="category-container">
+            {CATEGORIES.map(cat => (
+              <button 
+                key={cat} 
+                className={`cat-tab ${filters.selectedCategory === cat ? 'active' : ''}`}
+                onClick={() => {
+                  dispatch(setSelectedCategory(cat));
+                  navigate('/');
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* --- TOP DYNAMIC SLIDER (Marketplace Main View Only) --- */}
       {location.pathname === '/' && (
