@@ -55,6 +55,9 @@ import {
   setFilterInStockOnly, 
   setFilterCity,
   setFilterMaxBudget,
+  setFilterLocationSearch,
+  setFilterVerifiedOnly,
+  setFilterMinRating,
   setSortBy, 
   clearFilters 
 } from './store/filtersSlice';
@@ -379,14 +382,50 @@ export default function App() {
       }
     }
 
-    return matchesQuery && matchesSearchCat && matchesQuickCat && matchesBrand && matchesPrice && matchesStock && matchesCity && matchesBudget;
+    // 9. Location text search (City name, landmarks, or street address keywords)
+    const locQuery = filters.filterLocationSearch.toLowerCase().trim();
+    const matchesLocation = !locQuery || 
+      seller.city.toLowerCase().includes(locQuery) ||
+      seller.address.toLowerCase().includes(locQuery);
+
+    // 10. Verified Shop Filter
+    const matchesVerified = !filters.filterVerifiedOnly || seller.verified;
+
+    // 11. Minimum Shop Rating Filter
+    const minRating = parseFloat(filters.filterMinRating) || 0;
+    const matchesRating = seller.rating >= minRating;
+
+    return matchesQuery && 
+           matchesSearchCat && 
+           matchesQuickCat && 
+           matchesBrand && 
+           matchesPrice && 
+           matchesStock && 
+           matchesCity && 
+           matchesBudget && 
+           matchesLocation && 
+           matchesVerified && 
+           matchesRating;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (filters.sortBy === 'price-asc') return a.price - b.price;
     if (filters.sortBy === 'price-desc') return b.price - a.price;
     if (filters.sortBy === 'stock') return b.stock - a.stock;
-    return 0; // Default Featured (as defined in array)
+    if (filters.sortBy === 'rating') {
+      const sellerA = getSellerShop(a.shopId);
+      const sellerB = getSellerShop(b.shopId);
+      return sellerB.rating - sellerA.rating;
+    }
+    if (filters.sortBy === 'newest') {
+      const idA = parseInt(a.id.replace(/\D/g, ''), 10) || 0;
+      const idB = parseInt(b.id.replace(/\D/g, ''), 10) || 0;
+      return idB - idA;
+    }
+    if (filters.sortBy === 'alphabetical') {
+      return a.name.localeCompare(b.name);
+    }
+    return 0; // Default Featured
   });
 
   // Extract unique brands for sidebar filters
@@ -923,6 +962,22 @@ export default function App() {
               <button className="clear-filter-btn" onClick={() => dispatch(clearFilters())}>Clear All</button>
             </div>
 
+            {/* Location Search Input */}
+            <div className="filter-group">
+              <label className="filter-label">Search Location / Area</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="filter-input" 
+                  placeholder="e.g. Kochi, MG Road, Calicut..." 
+                  value={filters.filterLocationSearch}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setFilterLocationSearch(e.target.value))}
+                  style={{ paddingLeft: '2.2rem' }}
+                />
+                <MapPin size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary-light)' }} />
+              </div>
+            </div>
+
             {/* City Selector */}
             <div className="filter-group">
               <label className="filter-label">Select City</label>
@@ -977,6 +1032,37 @@ export default function App() {
               </div>
             </div>
 
+            {/* Advanced Filters */}
+            <div className="filter-group">
+              <label className="filter-label">Advanced Filters</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={filters.filterVerifiedOnly}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setFilterVerifiedOnly(e.target.checked))}
+                  />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <ShieldCheck size={14} style={{ color: 'var(--primary)' }} />
+                    <span>Verified Sellers Only</span>
+                  </span>
+                </label>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary-light)', fontWeight: 600 }}>Minimum Store Rating</span>
+                  <CustomSelect 
+                    value={filters.filterMinRating}
+                    onChange={(val) => dispatch(setFilterMinRating(val))}
+                    options={[
+                      { label: "All Store Ratings", value: "0" },
+                      { label: "4.0+ Stars", value: "4.0" },
+                      { label: "4.5+ Stars", value: "4.5" }
+                    ]}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* In Stock only */}
             <div className="filter-group">
               <label className="checkbox-label">
@@ -1011,6 +1097,9 @@ export default function App() {
                   { label: "Featured Listings", value: "featured" },
                   { label: "Price: Low to High", value: "price-asc" },
                   { label: "Price: High to Low", value: "price-desc" },
+                  { label: "Top Rated Sellers", value: "rating" },
+                  { label: "Newest Listings", value: "newest" },
+                  { label: "Name: A to Z", value: "alphabetical" },
                   { label: "Stock Available", value: "stock" }
                 ]}
               />

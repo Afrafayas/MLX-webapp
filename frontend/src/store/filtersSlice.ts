@@ -10,7 +10,10 @@ interface FiltersState {
   filterInStockOnly: boolean;
   filterCity: string;
   filterMaxBudget: string;
-  sortBy: 'featured' | 'price-asc' | 'price-desc' | 'stock';
+  filterLocationSearch: string;
+  filterVerifiedOnly: boolean;
+  filterMinRating: string;
+  sortBy: 'featured' | 'price-asc' | 'price-desc' | 'stock' | 'rating' | 'newest' | 'alphabetical';
 }
 
 const initialState: FiltersState = {
@@ -23,6 +26,9 @@ const initialState: FiltersState = {
   filterInStockOnly: false,
   filterCity: 'All Cities',
   filterMaxBudget: 'Any Budget',
+  filterLocationSearch: '',
+  filterVerifiedOnly: false,
+  filterMinRating: '0',
   sortBy: 'featured',
 };
 
@@ -57,7 +63,16 @@ const filtersSlice = createSlice({
     setFilterMaxBudget(state, action: PayloadAction<string>) {
       state.filterMaxBudget = action.payload;
     },
-    setSortBy(state, action: PayloadAction<'featured' | 'price-asc' | 'price-desc' | 'stock'>) {
+    setFilterLocationSearch(state, action: PayloadAction<string>) {
+      state.filterLocationSearch = action.payload;
+    },
+    setFilterVerifiedOnly(state, action: PayloadAction<boolean>) {
+      state.filterVerifiedOnly = action.payload;
+    },
+    setFilterMinRating(state, action: PayloadAction<string>) {
+      state.filterMinRating = action.payload;
+    },
+    setSortBy(state, action: PayloadAction<'featured' | 'price-asc' | 'price-desc' | 'stock' | 'rating' | 'newest' | 'alphabetical'>) {
       state.sortBy = action.payload;
     },
     clearFilters(state) {
@@ -70,6 +85,9 @@ const filtersSlice = createSlice({
       state.filterInStockOnly = false;
       state.filterCity = 'All Cities';
       state.filterMaxBudget = 'Any Budget';
+      state.filterLocationSearch = '';
+      state.filterVerifiedOnly = false;
+      state.filterMinRating = '0';
       state.sortBy = 'featured';
     },
   },
@@ -85,6 +103,9 @@ export const {
   setFilterInStockOnly,
   setFilterCity,
   setFilterMaxBudget,
+  setFilterLocationSearch,
+  setFilterVerifiedOnly,
+  setFilterMinRating,
   setSortBy,
   clearFilters,
 } = filtersSlice.actions;
