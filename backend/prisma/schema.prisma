@@ -1,0 +1,78 @@
+// Prisma schema for MongoDB Atlas
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      String   @default("customer") // "customer" | "seller"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop      Shop?
+}
+
+model Shop {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  ownerName String
+  phone     String
+  whatsapp  String
+  address   String
+  city      String
+  category  String
+  verified  Boolean  @default(false)
+  rating    Float    @default(4.5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId   String   @unique @db.ObjectId
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  products  Product[]
+  leads     Lead[]
+}
+
+model Product {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  brand       String
+  category    String
+  description String
+  price       Float
+  stock       Int      @default(1)
+  specsJson   String   @default("{}") // Stored as JSON string e.g. {"RAM": "8GB"}
+  imagesJson  String   @default("[]") // Stored as JSON string of image URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shopId      String   @db.ObjectId
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  leads       Lead[]
+}
+
+model Lead {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  productName   String
+  customerName  String
+  customerPhone String
+  contactType   String   // "call" | "whatsapp"
+  createdAt     DateTime @default(now())
+
+  shopId        String   @db.ObjectId
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  productId     String   @db.ObjectId
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,155 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+
+@Injectable()
+export class ProductsService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(sellerUserId: string, dto: CreateProductDto) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { ownerId: sellerUserId },
+    });
+
+    if (!shop) {
+      throw new ForbiddenException('You must create a shop profile before adding products');
+    }
+
+    const product = await this.prisma.product.create({
+      data: {
+        name: dto.name,
+        brand: dto.brand,
+        category: dto.category,
+        description: dto.description,
+        price: Number(dto.price),
+        stock: Number(dto.stock),
+        specsJson: JSON.stringify(dto.specs || {}),
+        imagesJson: JSON.stringify(dto.images || []),
+        shopId: shop.id,
+      },
+      include: {
+        shop: true,
+      },
+    });
+
+    return this.formatProduct(product);
+  }
+
+  async findAll(query: {
+    search?: string;
+    category?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    city?: string;
+    sortBy?: string;
+  }) {
+    const where: any = {};
+
+    if (query.category && query.category !== 'all' && query.category !== 'All Categories') {
+      where.category = query.category;
+    }
+
+    if (query.brand) {
+      where.brand = { contains: query.brand };
+    }
+
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      where.price = {};
+      if (query.minPrice !== undefined) where.price.gte = Number(query.minPrice);
+      if (query.maxPrice !== undefined) where.price.lte = Number(query.maxPrice);
+    }
+
+    if (query.city) {
+      where.shop = { city: { contains: query.city } };
+    }
+
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search } },
+        { brand: { contains: query.search } },
+        { category: { contains: query.search } },
+        { description: { contains: query.search } },
+      ];
+    }
+
+    let orderBy: any = { createdAt: 'desc' };
+    if (query.sortBy === 'price-asc') orderBy = { price: 'asc' };
+    if (query.sortBy === 'price-desc') orderBy = { price: 'desc' };
+    if (query.sortBy === 'stock') orderBy = { stock: 'desc' };
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy,
+      include: {
+        shop: true,
+      },
+    });
+
+    return products.map((p) => this.formatProduct(p));
+  }
+
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: { shop: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    return this.formatProduct(product);
+  }
+
+  async remove(id: string, sellerUserId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: { shop: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.shop.ownerId !== sellerUserId) {
+      throw new ForbiddenException('You can only delete products from your own shop');
+    }
+
+    await this.prisma.product.delete({ where: { id } });
+    return { success: true, message: 'Product deleted successfully' };
+  }
+
+  private formatProduct(p: any) {
+    let specs = {};
+    let images: string[] = [];
+
+    try {
+      specs = JSON.parse(p.specsJson || '{}');
+    } catch (e) {
+      specs = {};
+    }
+
+    try {
+      images = JSON.parse(p.imagesJson || '[]');
+    } catch (e) {
+      images = [];
+    }
+
+    return {
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      category: p.category,
+      description: p.description,
+      price: p.price,
+      stock: p.stock,
+      shopId: p.shopId,
+      shop: p.shop,
+      specs,
+      images,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    };
+  }
+}
