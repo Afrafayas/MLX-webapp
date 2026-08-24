@@ -95,6 +95,15 @@ const productsSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.setItem('mlx_leads', JSON.stringify(state.leads));
       }
+    },
+    setProducts(state, action: PayloadAction<Product[]>) {
+      state.items = action.payload;
+    },
+    setShops(state, action: PayloadAction<Shop[]>) {
+      state.shops = action.payload;
+    },
+    setLeads(state, action: PayloadAction<Lead[]>) {
+      state.leads = action.payload;
     }
   },
 });
@@ -108,7 +117,10 @@ export const {
   setSelectedProduct, 
   setShowAddEditModal, 
   setProductToEdit,
-  addLead
+  addLead,
+  setProducts,
+  setShops,
+  setLeads
 } = productsSlice.actions;
 
 export default productsSlice.reducer;

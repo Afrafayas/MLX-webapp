@@ -1,4 +1,4 @@
-// Prisma schema for MongoDB Atlas
+  // Prisma schema for MongoDB Atlas
 
 generator client {
   provider = "prisma-client-js"

@@ -1,3 +1,4 @@
+import { getProducts, getShops } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
 import { 
   Search, 
@@ -44,7 +45,9 @@ import {
   setSelectedProduct, 
   setShowAddEditModal, 
   setProductToEdit,
-  addLead
+  addLead,
+  setProducts,
+  setShops
 } from './store/productsSlice';
 import { 
   setSearchQuery, 
@@ -177,6 +180,25 @@ export default function App() {
   const { items: products, shops, leads, selectedProduct, showAddEditModal, productToEdit } = useAppSelector(state => state.products);
   const filters = useAppSelector(state => state.filters);
   const { toasts, dashboardTab } = useAppSelector(state => state.ui);
+
+  // --- LIVE BACKEND DATA LOADER ---
+  React.useEffect(() => {
+    async function loadLiveBackendData() {
+      try {
+        const liveProducts = await getProducts();
+        const liveShops = await getShops();
+        if (liveProducts && liveProducts.length > 0) {
+          dispatch(setProducts(liveProducts));
+        }
+        if (liveShops && liveShops.length > 0) {
+          dispatch(setShops(liveShops));
+        }
+      } catch (err) {
+        console.warn('Backend load fallback:', err);
+      }
+    }
+    loadLiveBackendData();
+  }, [dispatch]);
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
