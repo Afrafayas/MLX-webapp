@@ -419,13 +419,11 @@ export default function App() {
   const filteredProducts = products.filter(product => {
     const seller = getSellerShop(product.shopId);
 
-    // 1. Keyword search (Name, Brand, Description, Category)
-    const query = filters.searchQuery.toLowerCase().trim();
-    const matchesQuery = !query || 
-      product.name.toLowerCase().includes(query) ||
-      product.brand.toLowerCase().includes(query) ||
-      product.category.toLowerCase().includes(query) ||
-      product.description.toLowerCase().includes(query);
+    // 1. Multi-word keyword search with whitespace normalization
+    const rawQuery = filters.searchQuery.trim().replace(/\s+/g, ' ').toLowerCase();
+    const keywords = rawQuery ? rawQuery.split(' ') : [];
+    const productSearchText = `${product.name} ${product.brand} ${product.category} ${product.description} ${JSON.stringify(product.specs || {})}`.toLowerCase();
+    const matchesQuery = keywords.length === 0 || keywords.every(kw => productSearchText.includes(kw));
 
     // 2. Search category dropdown
     const matchesSearchCat = filters.searchCategory === 'All Categories' || 
@@ -447,8 +445,8 @@ export default function App() {
     // 6. Sidebar Stock Availability Filter
     const matchesStock = !filters.filterInStockOnly || product.stock > 0;
 
-    // 7. B2C City Location Filter
-    const matchesCity = filters.filterCity === 'All Cities' || 
+    // 7. B2C City Location Filter (Bypassed if typing a specific product search query)
+    const matchesCity = !!rawQuery || filters.filterCity === 'All Cities' || 
       seller.city.toLowerCase() === filters.filterCity.toLowerCase();
 
     // 8. B2C Budget Preset Filter
