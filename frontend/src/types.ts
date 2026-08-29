@@ -37,10 +37,25 @@ export interface Product {
   category: string;
   description: string;
   price: number;
+  offerPrice?: number;
   stock: number;
   shopId: string;
   specs: Record<string, string>;
   images?: string[];
+  // Task 2 & Task 3 New Fields:
+  storage?: string;
+  ram?: string;
+  batteryHealth?: string;
+  condition?: string;
+  warranty?: string;
+  color?: string;
+  simType?: string;
+  network?: string;
+  originalBill?: boolean;
+  accessories?: string[];
+  purchasedFromAmazon?: boolean;
+  isAmazonRefurbished?: boolean;
+  isSoldOut?: boolean;
 }
 
 export interface SourcingToast {

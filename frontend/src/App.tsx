@@ -276,16 +276,48 @@ export default function App() {
     category: 'Mobiles & Tablets'
   });
 
-  const [productForm, setProductForm] = React.useState({
+  const [productForm, setProductForm] = React.useState<{
+    name: string;
+    brand: string;
+    category: string;
+    description: string;
+    price: string;
+    offerPrice: string;
+    stock: string;
+    storage: string;
+    ram: string;
+    batteryHealth: string;
+    condition: string;
+    warranty: string;
+    color: string;
+    simType: string;
+    network: string;
+    originalBill: boolean;
+    accessories: string[];
+    purchasedFromAmazon: boolean;
+    isAmazonRefurbished: boolean;
+    images: string[];
+  }>({
     name: '',
     brand: '',
     category: 'Mobiles',
     description: '',
     price: '',
-    stock: '',
-    specVal1: '',
-    specVal2: 'Grade A (Like New)',
-    specVal3: ''
+    offerPrice: '',
+    stock: '1',
+    storage: '128GB',
+    ram: '8GB',
+    batteryHealth: '85% Health',
+    condition: 'Grade A (Like New)',
+    warranty: '3 Months Shop Warranty',
+    color: 'Black',
+    simType: 'Dual SIM',
+    network: '5G',
+    originalBill: true,
+    accessories: ['Box', 'Charger', 'Cable'],
+    purchasedFromAmazon: false,
+    isAmazonRefurbished: false,
+    images: ['', '', '', '', '', '', '']
   });
 
   const [profileForm, setProfileForm] = React.useState({
@@ -313,19 +345,32 @@ export default function App() {
     }
   }, [activeShop, dashboardTab]);
 
-  // Sync edit product form
+    // Sync edit product form
   React.useEffect(() => {
     if (productToEdit) {
+      const existingImgs = [...(productToEdit.images || [])];
+      while (existingImgs.length < 7) existingImgs.push('');
       setProductForm({
         name: productToEdit.name,
         brand: productToEdit.brand,
         category: productToEdit.category,
         description: productToEdit.description,
         price: productToEdit.price.toString(),
+        offerPrice: productToEdit.offerPrice ? productToEdit.offerPrice.toString() : '',
         stock: productToEdit.stock.toString(),
-        specVal1: productToEdit.specs?.['Storage'] || productToEdit.specs?.['Processor'] || '',
-        specVal2: productToEdit.specs?.['Condition'] || 'Grade A (Like New)',
-        specVal3: productToEdit.specs?.['Warranty'] || ''
+        storage: productToEdit.storage || productToEdit.specs?.['Storage'] || '128GB',
+        ram: productToEdit.ram || productToEdit.specs?.['RAM'] || '8GB',
+        batteryHealth: productToEdit.batteryHealth || productToEdit.specs?.['Battery'] || '85% Health',
+        condition: productToEdit.condition || productToEdit.specs?.['Condition'] || 'Grade A (Like New)',
+        warranty: productToEdit.warranty || productToEdit.specs?.['Warranty'] || '3 Months Shop Warranty',
+        color: productToEdit.color || 'Black',
+        simType: productToEdit.simType || 'Dual SIM',
+        network: productToEdit.network || '5G',
+        originalBill: productToEdit.originalBill !== undefined ? productToEdit.originalBill : true,
+        accessories: productToEdit.accessories || ['Box', 'Charger', 'Cable'],
+        purchasedFromAmazon: !!productToEdit.purchasedFromAmazon,
+        isAmazonRefurbished: !!productToEdit.isAmazonRefurbished,
+        images: existingImgs.slice(0, 7)
       });
     } else {
       setProductForm({
@@ -334,10 +379,21 @@ export default function App() {
         category: 'Mobiles',
         description: '',
         price: '',
-        stock: '',
-        specVal1: '',
-        specVal2: 'Grade A (Like New)',
-        specVal3: ''
+        offerPrice: '',
+        stock: '1',
+        storage: '128GB',
+        ram: '8GB',
+        batteryHealth: '85% Health',
+        condition: 'Grade A (Like New)',
+        warranty: '3 Months Shop Warranty',
+        color: 'Black',
+        simType: 'Dual SIM',
+        network: '5G',
+        originalBill: true,
+        accessories: ['Box', 'Charger', 'Cable'],
+        purchasedFromAmazon: false,
+        isAmazonRefurbished: false,
+        images: ['', '', '', '', '', '', '']
       });
     }
   }, [productToEdit, showAddEditModal]);
@@ -646,19 +702,25 @@ export default function App() {
     e.preventDefault();
     if (!activeShop) return;
 
-    const specs: Record<string, string> = {
-      "Condition": productForm.specVal2
-    };
-    
-    if (productForm.category === 'Mobiles' || productForm.category === 'Tablets') {
-      if (productForm.specVal1) specs['Storage'] = productForm.specVal1;
-    } else if (productForm.category === 'Laptops') {
-      if (productForm.specVal1) specs['Processor'] = productForm.specVal1;
-    } else {
-      if (productForm.specVal1) specs['Details'] = productForm.specVal1;
+    // Validate min 4 photos
+    const validImages = productForm.images.filter(img => img.trim() !== '');
+    if (validImages.length < 4) {
+      alert("Please provide photos from at least 4 angles (Front side, Back side, and Side angles)!");
+      return;
     }
 
-    if (productForm.specVal3) specs['Warranty'] = productForm.specVal3;
+    const specs: Record<string, string> = {
+      Storage: productForm.storage,
+      RAM: productForm.ram,
+      Battery: productForm.batteryHealth,
+      Condition: productForm.condition,
+      Warranty: productForm.warranty,
+      Color: productForm.color,
+      SIM: productForm.simType,
+      Network: productForm.network
+    };
+
+    const offerPriceNum = productForm.offerPrice ? parseFloat(productForm.offerPrice) : undefined;
 
     if (productToEdit) {
       const updated: Product = {
@@ -668,23 +730,46 @@ export default function App() {
         category: productForm.category,
         description: productForm.description,
         price: parseFloat(productForm.price),
+        offerPrice: offerPriceNum,
         stock: parseInt(productForm.stock),
-        specs
+        storage: productForm.storage,
+        ram: productForm.ram,
+        batteryHealth: productForm.batteryHealth,
+        condition: productForm.condition,
+        warranty: productForm.warranty,
+        color: productForm.color,
+        simType: productForm.simType,
+        network: productForm.network,
+        originalBill: productForm.originalBill,
+        accessories: productForm.accessories,
+        specs,
+        images: validImages
       };
       dispatch(editProduct(updated));
       triggerToast("Listing updated successfully!", "success");
     } else {
       const newProduct: Product = {
-        id: `prod-${products.length + 1}`,
+        id: `prod-${Date.now()}`,
         name: productForm.name,
         brand: productForm.brand,
         category: productForm.category,
         description: productForm.description,
         price: parseFloat(productForm.price),
+        offerPrice: offerPriceNum,
         stock: parseInt(productForm.stock),
         shopId: activeShop.id,
+        storage: productForm.storage,
+        ram: productForm.ram,
+        batteryHealth: productForm.batteryHealth,
+        condition: productForm.condition,
+        warranty: productForm.warranty,
+        color: productForm.color,
+        simType: productForm.simType,
+        network: productForm.network,
+        originalBill: productForm.originalBill,
+        accessories: productForm.accessories,
         specs,
-        images: []
+        images: validImages
       };
       dispatch(addProduct(newProduct));
       triggerToast("New used gadget listed successfully!", "success");
@@ -1919,124 +2004,265 @@ export default function App() {
                 {productToEdit ? 'Edit Used Device Details' : 'List Used Gadget for Selling'}
               </h3>
 
-              <form onSubmit={handleProductSubmit} className="form-grid">
-                <div className="form-group full-width">
-                  <label className="form-label">Product Name / Model *</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    required
-                    placeholder="e.g. iPhone 13 (Grade A)"
-                    value={productForm.name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, name: e.target.value})}
-                  />
+              <form onSubmit={handleProductSubmit} className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {/* 1. Multi-Angle Image Uploads */}
+                <div className="form-group full-width" style={{ gridColumn: 'span 2', background: 'var(--card-bg, #f8f9fa)', padding: '1rem', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                  <label className="form-label" style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    📷 Multi-Angle Photos (Required: Min 4, Max 7) *
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #64748b)', display: 'block', marginBottom: '0.75rem' }}>
+                    Please provide photo URLs for required angles: Front, Back, Left Side, and Right Side.
+                  </span>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                    {[
+                      { label: '1. Front Side (Required) *', placeholder: 'https://... front side photo URL' },
+                      { label: '2. Back Side (Required) *', placeholder: 'https://... back side photo URL' },
+                      { label: '3. Left/Right Side (Required) *', placeholder: 'https://... side angle photo URL' },
+                      { label: '4. Top/Bottom Side (Required) *', placeholder: 'https://... top/bottom photo URL' },
+                      { label: '5. Additional Angle 1 (Optional)', placeholder: 'https://... extra photo URL' },
+                      { label: '6. Additional Angle 2 (Optional)', placeholder: 'https://... extra photo URL' },
+                      { label: '7. Additional Angle 3 (Optional)', placeholder: 'https://... extra photo URL' },
+                    ].map((slot, idx) => (
+                      <div key={idx} style={{ gridColumn: idx === 0 ? 'span 2' : 'span 1' }}>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569' }}>{slot.label}</label>
+                        <input
+                          type="url"
+                          className="form-input-text"
+                          style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
+                          required={idx < 4}
+                          placeholder={slot.placeholder}
+                          value={productForm.images[idx] || ''}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const updatedImgs = [...productForm.images];
+                            updatedImgs[idx] = e.target.value;
+                            setProductForm({ ...productForm, images: updatedImgs });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
+                {/* 2. Basic Info */}
                 <div className="form-group">
                   <label className="form-label">Brand *</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
+                  <input
+                    type="text"
+                    className="form-input-text"
                     required
-                    placeholder="e.g. Apple, Samsung, Xiaomi"
+                    placeholder="e.g. Apple, Samsung, OnePlus"
                     value={productForm.brand}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, brand: e.target.value})}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, brand: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Gadget Category *</label>
-                  <select 
+                  <label className="form-label">Product Name / Model *</label>
+                  <input
+                    type="text"
+                    className="form-input-text"
+                    required
+                    placeholder="e.g. iPhone 15 Pro Max"
+                    value={productForm.name}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, name: e.target.value })}
+                  />
+                </div>
+
+                {/* 3. Specs & Pricing */}
+                <div className="form-group">
+                  <label className="form-label">Storage Capacity *</label>
+                  <select
                     className="form-select-box"
-                    value={productForm.category}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({...productForm, category: e.target.value})}
+                    value={productForm.storage}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, storage: e.target.value })}
                   >
-                    <option value="Mobiles">Mobiles</option>
-                    <option value="Laptops">Laptops</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Tablets">Tablets</option>
-                    <option value="Smart Watches">Smart Watches</option>
+                    <option value="64GB">64GB</option>
+                    <option value="128GB">128GB</option>
+                    <option value="256GB">256GB</option>
+                    <option value="512GB">512GB</option>
+                    <option value="1TB">1TB</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Consumer Selling Price (₹) *</label>
-                  <input 
-                    type="number" 
-                    className="form-input-text" 
+                  <label className="form-label">RAM *</label>
+                  <select
+                    className="form-select-box"
+                    value={productForm.ram}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, ram: e.target.value })}
+                  >
+                    <option value="4GB">4GB</option>
+                    <option value="6GB">6GB</option>
+                    <option value="8GB">8GB</option>
+                    <option value="12GB">12GB</option>
+                    <option value="16GB">16GB</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Regular Listing Price (₹) *</label>
+                  <input
+                    type="number"
+                    className="form-input-text"
                     required
-                    placeholder="Listing price in INR"
+                    placeholder="Regular price in INR"
                     value={productForm.price}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, price: e.target.value})}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, price: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Stock Units Available *</label>
-                  <input 
-                    type="number" 
-                    className="form-input-text" 
+                  <label className="form-label">Discounted Offer Price (₹)</label>
+                  <input
+                    type="number"
+                    className="form-input-text"
+                    placeholder="Offer price (optional)"
+                    value={productForm.offerPrice}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, offerPrice: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Battery Health / Capacity *</label>
+                  <input
+                    type="text"
+                    className="form-input-text"
                     required
-                    placeholder="Units in hand"
-                    value={productForm.stock}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, stock: e.target.value})}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    {productForm.category === 'Mobiles' || productForm.category === 'Tablets' ? 'Storage Capacity' : 
-                     productForm.category === 'Laptops' ? 'Processor details' : 'Other Spec details'}
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    placeholder={productForm.category === 'Mobiles' ? "e.g. 128GB" : "e.g. Core i5"}
-                    value={productForm.specVal1}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, specVal1: e.target.value})}
+                    placeholder="e.g. 88% Health or 5000mAh"
+                    value={productForm.batteryHealth}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, batteryHealth: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Device Physical Condition *</label>
-                  <select 
+                  <select
                     className="form-select-box"
-                    value={productForm.specVal2}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({...productForm, specVal2: e.target.value})}
+                    value={productForm.condition}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, condition: e.target.value })}
                   >
-                    <option value="Brand New (Sealed)">Brand New (Sealed)</option>
-                    <option value="Open Box (Like New)">Open Box (Like New)</option>
                     <option value="Grade A (Like New)">Grade A (Like New)</option>
-                    <option value="Grade B (Minor Wear)">Grade B (Minor Wear)</option>
+                    <option value="Grade B (Superb)">Grade B (Superb)</option>
+                    <option value="Grade C (Good)">Grade C (Good)</option>
+                    <option value="Fair Condition">Fair Condition</option>
                   </select>
                 </div>
 
-                <div className="form-group full-width">
-                  <label className="form-label">Warranty / Shop Warranty details</label>
-                  <input 
-                    type="text" 
-                    className="form-input-text" 
-                    placeholder="e.g. 3 Months Shop Warranty"
-                    value={productForm.specVal3}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({...productForm, specVal3: e.target.value})}
+                <div className="form-group">
+                  <label className="form-label">Shop Warranty *</label>
+                  <select
+                    className="form-select-box"
+                    value={productForm.warranty}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, warranty: e.target.value })}
+                  >
+                    <option value="None">None</option>
+                    <option value="7 Days Shop Warranty">7 Days Shop Warranty</option>
+                    <option value="1 Month Shop Warranty">1 Month Shop Warranty</option>
+                    <option value="3 Months Shop Warranty">3 Months Shop Warranty</option>
+                    <option value="6 Months Shop Warranty">6 Months Shop Warranty</option>
+                    <option value="1 Year Shop Warranty">1 Year Shop Warranty</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Color *</label>
+                  <input
+                    type="text"
+                    className="form-input-text"
+                    required
+                    placeholder="e.g. Space Black, Natural Titanium"
+                    value={productForm.color}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setProductForm({ ...productForm, color: e.target.value })}
                   />
                 </div>
 
-                <div className="form-group full-width">
+                <div className="form-group">
+                  <label className="form-label">SIM Type *</label>
+                  <select
+                    className="form-select-box"
+                    value={productForm.simType}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, simType: e.target.value })}
+                  >
+                    <option value="Dual SIM">Dual SIM</option>
+                    <option value="Single SIM + eSIM">Single SIM + eSIM</option>
+                    <option value="Dual eSIM">Dual eSIM</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Network *</label>
+                  <select
+                    className="form-select-box"
+                    value={productForm.network}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductForm({ ...productForm, network: e.target.value })}
+                  >
+                    <option value="5G">5G</option>
+                    <option value="4G">4G</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Original Bill Available?</label>
+                  <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.4rem' }}>
+                    <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="originalBill"
+                        checked={productForm.originalBill === true}
+                        onChange={() => setProductForm({ ...productForm, originalBill: true })}
+                      />
+                      <span>Yes (Original Bill Included)</span>
+                    </label>
+                    <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="originalBill"
+                        checked={productForm.originalBill === false}
+                        onChange={() => setProductForm({ ...productForm, originalBill: false })}
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Included Accessories</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.4rem' }}>
+                    {['Box', 'Charger', 'Cable', 'Case', 'Screen Guard'].map(acc => (
+                      <label key={acc} style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={productForm.accessories.includes(acc)}
+                          onChange={(e) => {
+                            let updatedAcc = [...productForm.accessories];
+                            if (e.target.checked) updatedAcc.push(acc);
+                            else updatedAcc = updatedAcc.filter(a => a !== acc);
+                            setProductForm({ ...productForm, accessories: updatedAcc });
+                          }}
+                        />
+                        <span>{acc}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
                   <label className="form-label">Detailed Device Description *</label>
-                  <textarea 
-                    className="form-textarea" 
+                  <textarea
+                    className="form-textarea"
                     required
-                    placeholder="Include battery status, scuffs, color, charger details..."
+                    rows={3}
+                    placeholder="Include scuff details, warranty info, charger status..."
                     value={productForm.description}
-                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setProductForm({...productForm, description: e.target.value})}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setProductForm({ ...productForm, description: e.target.value })}
                   ></textarea>
                 </div>
 
-                <div className="form-actions-row full-width">
-                  <button 
-                    type="button" 
-                    className="btn-outline-dark" 
+                <div className="form-actions-row" style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="btn-outline-dark"
                     style={{ padding: '0.6rem 1.2rem' }}
                     onClick={() => dispatch(setShowAddEditModal(false))}
                   >
