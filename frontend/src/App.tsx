@@ -2304,8 +2304,15 @@ export default function App() {
                 <div className="form-actions-row" style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
                   <button
                     type="button"
-                    className="btn-outline-dark"
-                    style={{ padding: '0.6rem 1.2rem' }}
+                    style={{
+                      padding: '0.6rem 1.4rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#f1f5f9',
+                      color: '#0f172a',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
                     onClick={() => dispatch(setShowAddEditModal(false))}
                   >
                     Cancel
