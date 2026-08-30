@@ -932,7 +932,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Row 3: Trending Models */}
+                                    {/* Row 3: Trending Models */}
                   <div className="overlay-minimal-row" style={{ borderTop: '1px solid var(--light-border)', paddingTop: '0.5rem', marginTop: '0.25rem', width: '100%' }}>
                     <span className="min-row-lbl">Trending:</span>
                     <div className="minimal-tags">
@@ -942,6 +942,48 @@ export default function App() {
                       <button className="min-tag model" onClick={() => handleTagClick('query', 'OnePlus')}>OnePlus</button>
                     </div>
                   </div>
+
+                  {/* Real-Time Autocomplete Suggestions Section */}
+                  {filters.searchQuery.trim() !== '' && (
+                    <div className="search-autocomplete-section" style={{ borderTop: '1px solid var(--light-border)', paddingTop: '0.6rem', marginTop: '0.4rem', width: '100%' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.4rem' }}>
+                        Matching Products ({filteredProducts.length})
+                      </div>
+                      {filteredProducts.length === 0 ? (
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '0.4rem 0' }}>
+                          No matching products found for "{filters.searchQuery}"
+                        </div>
+                      ) : (
+                        <div className="autocomplete-suggestions-list" style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          {filteredProducts.slice(0, 5).map(prod => (
+                            <div
+                              key={prod.id}
+                              className="suggestion-item"
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.6rem', borderRadius: '8px', cursor: 'pointer', background: '#f8f9fa' }}
+                              onClick={() => {
+                                dispatch(setSelectedProduct(prod));
+                                setIsSearchFocused(false);
+                                navigate('/');
+                              }}
+                            >
+                              {prod.images && prod.images[0] ? (
+                                <img src={prod.images[0]} alt={prod.name} style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '4px' }} />
+                              ) : (
+                                <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>📱</div>
+                              )}
+                              <div style={{ flex: 1, overflow: 'hidden' }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</div>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{prod.brand} • {prod.category}</div>
+                              </div>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb' }}>
+                                ₹{prod.price.toLocaleString('en-IN')}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
