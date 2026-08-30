@@ -882,6 +882,8 @@ export default function App() {
                 onFocus={() => setIsSearchFocused(true)}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => dispatch(setSearchQuery(e.target.value))}
                 autoComplete="off"
+                spellCheck={false}
+                style={{ color: '#ffffff' }}
               />
               <button className="search-btn" onClick={() => { setIsSearchFocused(false); navigate('/'); }}>
                 <Search size={16} />
