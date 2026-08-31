@@ -120,7 +120,13 @@ export const INITIAL_PRODUCTS: Product[] = [
       "Battery Health": "90%",
       "Box & Cable": "Available"
     },
-    images: ["/images/iphone_17_pro_1.png"]
+    images: [
+      "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800",
+      "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800",
+      "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800",
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800",
+      "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=800"
+    ]
   },
   {
     id: "prod-2",
