@@ -956,30 +956,25 @@ export default function App() {
                           No matching products found for "{filters.searchQuery}"
                         </div>
                       ) : (
-                        <div className="autocomplete-suggestions-list" style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div className="autocomplete-suggestions-list" style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                           {filteredProducts.slice(0, 5).map(prod => (
                             <div
                               key={prod.id}
                               className="suggestion-item"
-                              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.6rem', borderRadius: '8px', cursor: 'pointer', background: '#f8f9fa' }}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: '8px', cursor: 'pointer', background: '#f8f9fa' }}
                               onClick={() => {
-                                dispatch(setSelectedProduct(prod));
+                                dispatch(setSearchQuery(prod.name));
                                 setIsSearchFocused(false);
                                 navigate('/');
                               }}
                             >
-                              {prod.images && prod.images[0] ? (
-                                <img src={prod.images[0]} alt={prod.name} style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '4px' }} />
-                              ) : (
-                                <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>📱</div>
-                              )}
-                              <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</div>
-                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{prod.brand} • {prod.category}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                <Smartphone size={14} style={{ color: '#2563eb', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0f172a' }}>{prod.name}</span>
                               </div>
-                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563eb' }}>
                                 ₹{prod.price.toLocaleString('en-IN')}
-                              </div>
+                              </span>
                             </div>
                           ))}
                         </div>
