@@ -146,6 +146,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   ✨ <strong>Condition:</strong> {selectedProduct.condition || selectedProduct.specs?.['Condition'] || 'Grade A'}
                 </div>
                 <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                  🕒 <strong>Device Age:</strong> {selectedProduct.deviceAge || '6 Months Old'}
+                </div>
+                <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
                   🛡️ <strong>Warranty:</strong> {selectedProduct.warranty || selectedProduct.specs?.['Warranty'] || 'Shop Warranty'}
                 </div>
                 <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
@@ -160,16 +163,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Included Accessories */}
-            {selectedProduct.accessories && selectedProduct.accessories.length > 0 && (
+            {/* Included Accessories & Documents Checklist */}
+            {((selectedProduct.documents && selectedProduct.documents.length > 0) || (selectedProduct.accessories && selectedProduct.accessories.length > 0)) && (
               <div>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: '0.35rem' }}>
-                  📦 Included Accessories:
+                  📦 Included Accessories & Documents:
                 </span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                  {selectedProduct.accessories.map(acc => (
-                    <span key={acc} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                      ✓ {acc}
+                  {(selectedProduct.documents || selectedProduct.accessories || []).map(item => (
+                    <span key={item} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '0.25rem 0.55rem', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                      ✓ {item}
                     </span>
                   ))}
                 </div>

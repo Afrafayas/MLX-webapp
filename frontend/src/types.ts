@@ -56,6 +56,9 @@ export interface Product {
   purchasedFromAmazon?: boolean;
   isAmazonRefurbished?: boolean;
   isSoldOut?: boolean;
+  deviceAge?: string;
+  imeiNumber?: string;
+  documents?: string[];
 }
 
 export interface SourcingToast {

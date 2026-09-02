@@ -28,6 +28,9 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
     batteryHealth: '95%',
     condition: 'Grade A (Like New)',
     warranty: '3 Months Shop Warranty',
+    deviceAge: '6 Months Old',
+    imeiNumber: '',
+    documents: ['Tax Invoice Bill', 'Warranty Card', 'Brand Box', 'Charger & Cable'],
     color: 'Natural Titanium',
     simType: 'Dual SIM',
     network: '5G',
@@ -52,6 +55,9 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
         batteryHealth: productToEdit.batteryHealth || '95%',
         condition: productToEdit.condition || 'Grade A (Like New)',
         warranty: productToEdit.warranty || '3 Months Shop Warranty',
+        deviceAge: productToEdit.deviceAge || '6 Months Old',
+        imeiNumber: productToEdit.imeiNumber || '',
+        documents: productToEdit.documents || (productToEdit.accessories || ['Box', 'Charger', 'Cable']),
         color: productToEdit.color || 'Natural Titanium',
         simType: productToEdit.simType || 'Dual SIM',
         network: productToEdit.network || '5G',
@@ -82,6 +88,9 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
         batteryHealth: '95%',
         condition: 'Grade A (Like New)',
         warranty: '3 Months Shop Warranty',
+        deviceAge: '6 Months Old',
+        imeiNumber: '',
+        documents: ['Tax Invoice Bill', 'Warranty Card', 'Brand Box', 'Charger & Cable'],
         color: 'Natural Titanium',
         simType: 'Dual SIM',
         network: '5G',
@@ -119,6 +128,9 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
       simType: productForm.simType,
       network: productForm.network,
       originalBill: productForm.originalBill,
+      deviceAge: productForm.deviceAge,
+      imeiNumber: productForm.imeiNumber,
+      documents: productForm.documents,
       accessories: productForm.accessories,
       purchasedFromAmazon: productForm.purchasedFromAmazon,
       isAmazonRefurbished: productForm.isAmazonRefurbished,
@@ -259,6 +271,19 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
           </div>
 
           <div className="form-group">
+            <label className="form-label">Device Age / Purchase Date *</label>
+            <input type="text" className="form-input-text" required placeholder="e.g. 6 Months Old, Purchased Jan 2024" value={productForm.deviceAge} onChange={(e) => setProductForm({ ...productForm, deviceAge: e.target.value })} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span>IMEI / Serial Number</span>
+              <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#dc2626', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>🔒 Hidden (Backend Only)</span>
+            </label>
+            <input type="text" className="form-input-text" placeholder="e.g. 356789123456789 (Seller verification reference)" value={productForm.imeiNumber} onChange={(e) => setProductForm({ ...productForm, imeiNumber: e.target.value })} />
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Shop Warranty Period *</label>
             <select className="form-select-box" value={productForm.warranty} onChange={(e) => setProductForm({ ...productForm, warranty: e.target.value })}>
               <option value="None">None</option>
@@ -276,21 +301,28 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({ onToas
           </div>
 
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Included Accessories</label>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              {['Box', 'Charger', 'Cable', 'Case', 'Screen Guard'].map(acc => (
-                <label key={acc} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem' }}>
+            <label className="form-label">Included Accessories & Documents Checklist</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+              {[
+                'Tax Invoice Bill',
+                'Warranty Card / Document',
+                'Original Brand Box',
+                'Fast Charger & Cable',
+                'Protective Silicone Case',
+                'Tempered Glass Guard'
+              ].map(item => (
+                <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', background: '#f8f9fa', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    checked={productForm.accessories.includes(acc)}
+                    checked={(productForm.documents || productForm.accessories).includes(item)}
                     onChange={(e) => {
-                      let updated = [...productForm.accessories];
-                      if (e.target.checked) updated.push(acc);
-                      else updated = updated.filter(a => a !== acc);
-                      setProductForm({ ...productForm, accessories: updated });
+                      let updated = [...(productForm.documents || productForm.accessories)];
+                      if (e.target.checked) updated.push(item);
+                      else updated = updated.filter(a => a !== item);
+                      setProductForm({ ...productForm, documents: updated, accessories: updated });
                     }}
                   />
-                  <span>{acc}</span>
+                  <span>{item}</span>
                 </label>
               ))}
             </div>
