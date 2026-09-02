@@ -1,3 +1,5 @@
+import { ProductDetailModal } from './components/ProductDetailModal';
+import { Footer } from './components/Footer';
 import { getProducts, getShops } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
 import { 
@@ -320,7 +322,6 @@ export default function App() {
     images: ['', '', '', '', '', '', '']
   });
 
-  const [activeImgIdx, setActiveImgIdx] = React.useState<number>(0);
   const [profileForm, setProfileForm] = React.useState({
     name: '',
     ownerName: '',
@@ -347,7 +348,7 @@ export default function App() {
   }, [activeShop, dashboardTab]);
 
     React.useEffect(() => {
-    setActiveImgIdx(0);
+    
   }, [selectedProduct]);
 
   // Sync edit product form
@@ -1895,241 +1896,9 @@ export default function App() {
         </main>
       } /></Routes>
 
-      {/* --- FOOTER --- */}
-      <footer className="site-footer">
-        <div className="footer-container">
-          <div className="footer-info">
-            <div className="footer-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <img src="/logo.png" alt="MLX Market Logo" style={{ height: '32px', width: '32px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
-              <span>MLX <span>DIRECT</span></span>
-            </div>
-            <p className="footer-desc">
-              MLX Direct is India's premium B2C used gadgets directory, connecting verified local dealers with consumers directly. We collect zero commission fees on user transactions.
-            </p>
-          </div>
+      <Footer />
 
-          <div className="footer-links-col">
-            <span className="footer-links-title">Quick Navigation</span>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); navigate('/'); dispatch(clearFilters()); }}>Consumer Marketplace</a>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); handleOpenAddProduct(); }}>List Used Gadget</a>
-            <a href="#" className="footer-link" onClick={(e) => { e.preventDefault(); dispatch(setAuthRole('seller')); dispatch(setAuthTab('login')); dispatch(setShowAuthModal(true)); }}>Verified Store Sign In</a>
-          </div>
-
-          <div className="footer-links-col">
-            <span className="footer-links-title">Support & Guidelines</span>
-            <span className="footer-link">MLX verification process</span>
-            <span className="footer-link">Anti-Fraud purchasing tips</span>
-            <span className="footer-link">Retail subscription model</span>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <span>&copy; {new Date().getFullYear()} MLX Direct - Shop to Customer Used Gadget Directory.</span>
-          <span>Connecting consumers with verified merchants near their city.</span>
-        </div>
-      </footer>
-
-      {/* --- PRODUCT DETAIL MODAL OVERLAY (AMAZON STYLE) --- */}
-      {selectedProduct && (
-        <div className="modal-overlay" onClick={() => dispatch(setSelectedProduct(null))}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '850px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button className="modal-close-btn" onClick={() => dispatch(setSelectedProduct(null))}>
-              <X size={18} />
-            </button>
-
-            <div className="product-detail-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', padding: '2rem 1.5rem' }}>
-              {/* Left Column: Multi-Image Gallery */}
-              <div className="detail-media" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="main-image-display" style={{ width: '100%', height: '320px', background: '#f8f9fa', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                  {selectedProduct.images && selectedProduct.images.length > 0 ? (
-                    <img
-                      src={selectedProduct.images[activeImgIdx] || selectedProduct.images[0]}
-                      alt={selectedProduct.name}
-                      className="product-detail-img"
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                  ) : (
-                    renderCategoryIcon(selectedProduct.category, "detail-visual-svg")
-                  )}
-                </div>
-
-                {/* Multi-Angle Photo Thumbnail Carousel */}
-                {selectedProduct.images && selectedProduct.images.length > 0 && (
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '0.4rem' }}>
-                      📷 Multi-Angle View (${selectedProduct.images.length} photos):
-                    </span>
-                    <div className="thumbnail-strip" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                      {selectedProduct.images.map((imgUrl, idx) => {
-                        const labels = ['Front', 'Back', 'Side 1', 'Side 2', 'Angle 5', 'Angle 6', 'Angle 7'];
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveImgIdx(idx)}
-                            style={{
-                              border: activeImgIdx === idx ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                              borderRadius: '8px',
-                              padding: '2px',
-                              background: '#fff',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              flexShrink: 0
-                            }}
-                          >
-                            <img src={imgUrl} alt={`Angle ${idx + 1}`} style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px' }} />
-                            <span style={{ fontSize: '0.65rem', fontWeight: 600, color: activeImgIdx === idx ? '#2563eb' : '#64748b', marginTop: '2px' }}>
-                              {labels[idx] || `Angle ${idx + 1}`}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Device Info & Specs */}
-              <div className="detail-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                <div className="detail-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
-                      {selectedProduct.category}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
-                      Brand: <strong>{selectedProduct.brand}</strong>
-                    </span>
-                  </div>
-                  <h2 className="detail-title" style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>
-                    {selectedProduct.name}
-                  </h2>
-                </div>
-
-                {/* Pricing & Discount Row */}
-                <div style={{ background: '#f8f9fa', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
-                    <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#16a34a' }}>
-                      ₹{(selectedProduct.offerPrice || selectedProduct.price).toLocaleString('en-IN')}
-                    </span>
-                    {selectedProduct.offerPrice && selectedProduct.offerPrice < selectedProduct.price && (
-                      <>
-                        <span style={{ fontSize: '0.9rem', color: '#94a3b8', textDecoration: 'line-through' }}>
-                          ₹{selectedProduct.price.toLocaleString('en-IN')}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
-                          Save ₹{(selectedProduct.price - selectedProduct.offerPrice).toLocaleString('en-IN')} ({Math.round(((selectedProduct.price - selectedProduct.offerPrice) / selectedProduct.price) * 100)}% OFF)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', fontWeight: 600, color: (selectedProduct.stock <= 0 || selectedProduct.isSoldOut) ? '#dc2626' : '#16a34a' }}>
-                    {(selectedProduct.stock <= 0 || selectedProduct.isSoldOut) ? '🔴 SOLD OUT (Out of Stock)' : `🟢 In Stock (${selectedProduct.stock} unit available)`}
-                  </div>
-                </div>
-
-                {/* Amazon Style Key Specs Bullet Grid */}
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: '0.5rem' }}>
-                    📌 Device Specifications & Condition:
-                  </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', fontSize: '0.8rem' }}>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      💾 <strong>Storage:</strong> {selectedProduct.storage || selectedProduct.specs?.['Storage'] || 'N/A'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      ⚡ <strong>RAM:</strong> {selectedProduct.ram || selectedProduct.specs?.['RAM'] || 'N/A'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      🔋 <strong>Battery:</strong> {selectedProduct.batteryHealth || selectedProduct.specs?.['Battery'] || 'N/A'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      ✨ <strong>Condition:</strong> {selectedProduct.condition || selectedProduct.specs?.['Condition'] || 'Grade A'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      🛡️ <strong>Warranty:</strong> {selectedProduct.warranty || selectedProduct.specs?.['Warranty'] || 'Shop Warranty'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      🎨 <strong>Color:</strong> {selectedProduct.color || 'Standard'}
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      📶 <strong>Network:</strong> {selectedProduct.network || '5G'} ({selectedProduct.simType || 'Dual SIM'})
-                    </div>
-                    <div style={{ background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                      🧾 <strong>Original Bill:</strong> {selectedProduct.originalBill !== false ? 'Yes (Included)' : 'No'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Included Accessories */}
-                {selectedProduct.accessories && selectedProduct.accessories.length > 0 && (
-                  <div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: '0.35rem' }}>
-                      📦 Included Accessories:
-                    </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                      {selectedProduct.accessories.map(acc => (
-                        <span key={acc} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', background: '#eff6ff', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                          ✓ {acc}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Device Description */}
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem' }}>
-                  <p style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
-                    {selectedProduct.description}
-                  </p>
-                </div>
-
-                {/* Seller Shop Details & Action Buttons */}
-                {(() => {
-                  const seller = getSellerShop(selectedProduct.shopId);
-                  return (
-                    <div className="dealer-info-card" style={{ marginTop: '0.5rem', background: '#f8f9fa', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span className="dealer-card-name" style={{ fontSize: '0.9rem', fontWeight: 700 }}>{seller.name}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#2563eb', fontSize: '0.75rem', fontWeight: 600 }}>
-                          <ShieldCheck size={14} />
-                          <span>Verified Merchant Store</span>
-                        </div>
-                      </div>
-                      <div className="dealer-card-address" style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.2rem' }}>
-                        <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                        <span>{seller.address}, {seller.city}</span>
-                      </div>
-
-                      <div className="sourcing-actions" style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        <button
-                          className="btn-call"
-                          disabled={selectedProduct.stock <= 0 || selectedProduct.isSoldOut}
-                          onClick={() => handleCallSeller(selectedProduct, seller)}
-                          style={{ opacity: (selectedProduct.stock <= 0 || selectedProduct.isSoldOut) ? 0.5 : 1 }}
-                        >
-                          <Phone size={16} />
-                          <span>Call Dealer Shop</span>
-                        </button>
-                        <button
-                          className="btn-whatsapp"
-                          disabled={selectedProduct.stock <= 0 || selectedProduct.isSoldOut}
-                          onClick={() => handleWhatsAppSeller(selectedProduct, seller)}
-                          style={{ opacity: (selectedProduct.stock <= 0 || selectedProduct.isSoldOut) ? 0.5 : 1 }}
-                        >
-                          <Smartphone size={16} />
-                          <span>WhatsApp Merchant</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductDetailModal getSellerShop={getSellerShop} onCallSeller={handleCallSeller} onWhatsAppSeller={handleWhatsAppSeller} />
 
       {/* --- ADD / EDIT PRODUCT MODAL --- */}
       {showAddEditModal && (
