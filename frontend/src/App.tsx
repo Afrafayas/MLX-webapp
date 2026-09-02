@@ -43,7 +43,6 @@ import {
   updateShop,
   addProduct, 
   editProduct, 
-  deleteProduct, 
   setSelectedProduct, 
   setShowAddEditModal, 
   setProductToEdit,
@@ -782,11 +781,36 @@ export default function App() {
     dispatch(setShowAddEditModal(false));
   };
 
+  const handleToggleSoldOut = (product: Product) => {
+    const isCurrentlySoldOut = product.isSoldOut || product.stock <= 0;
+    const nextSoldOutState = !isCurrentlySoldOut;
+    const nextStock = nextSoldOutState ? 0 : (product.stock > 0 ? product.stock : 1);
+    const updated: Product = {
+      ...product,
+      isSoldOut: nextSoldOutState,
+      stock: nextStock
+    };
+    dispatch(editProduct(updated));
+    triggerToast(
+      nextSoldOutState 
+        ? `Marked "${product.name}" as Sold Out 🔴` 
+        : `Restored "${product.name}" to In Stock 🟢`, 
+      'info'
+    );
+  };
+
   const handleDeleteListing = (productId: string) => {
-    if (window.confirm("Are you sure you want to remove this product listing?")) {
-      dispatch(deleteProduct(productId));
-      triggerToast("Listing removed from directory.");
-    }
+    const target = products.find(p => p.id === productId);
+    if (!target) return;
+
+    // Task 3: Soft delete -> Mark as Sold Out instead of removing outright
+    const softDeleted: Product = {
+      ...target,
+      isSoldOut: true,
+      stock: 0
+    };
+    dispatch(editProduct(softDeleted));
+    triggerToast(`Listing "${target.name}" marked as Sold Out. Click "Restore" on the item to undo stock.`, 'warning');
   };
 
   // Capture Lead & Open Link
@@ -1701,7 +1725,23 @@ export default function App() {
                         <div className="listing-price-tag">
                           ₹{product.price.toLocaleString('en-IN')}
                         </div>
-                        <div className="listing-actions">
+                        <div className="listing-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSoldOut(product)}
+                            style={{
+                              padding: '0.35rem 0.7rem',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: (product.stock <= 0 || product.isSoldOut) ? '1px solid #fca5a5' : '1px solid #bbf7d0',
+                              background: (product.stock <= 0 || product.isSoldOut) ? '#fef2f2' : '#f0fdf4',
+                              color: (product.stock <= 0 || product.isSoldOut) ? '#dc2626' : '#16a34a'
+                            }}
+                          >
+                            {(product.stock <= 0 || product.isSoldOut) ? '🔴 Sold Out (Restore)' : '🟢 In Stock'}
+                          </button>
                           <button 
                             className="btn-icon-action edit" 
                             title="Edit details"
