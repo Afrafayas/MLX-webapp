@@ -73,7 +73,7 @@ export class AuthService {
       throw new BadRequestException('Please provide email or phone number to login');
     }
 
-    let user = null;
+    let user: any = null;
     if (dto.email) {
       user = await this.prisma.user.findUnique({
         where: { email: dto.email.toLowerCase() },
