@@ -15,9 +15,13 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const role = dto.role || 'customer';
 
+    if (!dto.password) {
+      throw new BadRequestException('Password is required');
+    }
+
     if (role === 'seller') {
-      if (!dto.email || !dto.password) {
-        throw new BadRequestException('Email and password are required for seller registration');
+      if (!dto.email) {
+        throw new BadRequestException('Email is required for seller registration');
       }
     } else {
       if (!dto.phone && !dto.email) {
@@ -44,7 +48,7 @@ export class AuthService {
       }
     }
 
-    const hashedPassword = dto.password ? await bcrypt.hash(dto.password, 10) : null;
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({
       data: {
@@ -73,6 +77,10 @@ export class AuthService {
       throw new BadRequestException('Please provide email or phone number to login');
     }
 
+    if (!dto.password) {
+      throw new BadRequestException('Please provide password');
+    }
+
     let user: any = null;
     if (dto.email) {
       user = await this.prisma.user.findUnique({
@@ -90,7 +98,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.password && dto.password) {
+    if (user.password) {
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
