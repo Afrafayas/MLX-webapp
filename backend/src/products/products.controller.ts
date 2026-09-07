@@ -7,6 +7,12 @@ import { CreateProductDto } from './dto/create-product.dto';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('mine')
+  async findMine(@Request() req: any) {
+    return this.productsService.findMine(req.user.id);
+  }
+
   @Get()
   async findAll(
     @Query('search') search?: string,
@@ -16,8 +22,9 @@ export class ProductsController {
     @Query('maxPrice') maxPrice?: number,
     @Query('city') city?: string,
     @Query('sortBy') sortBy?: string,
+    @Query('shopId') shopId?: string,
   ) {
-    return this.productsService.findAll({ search, category, brand, minPrice, maxPrice, city, sortBy });
+    return this.productsService.findAll({ search, category, brand, minPrice, maxPrice, city, sortBy, shopId });
   }
 
   @Get(':id')

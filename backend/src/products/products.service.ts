@@ -35,6 +35,24 @@ export class ProductsService {
     return this.formatProduct(product);
   }
 
+  async findMine(sellerUserId: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { ownerId: sellerUserId },
+    });
+
+    if (!shop) {
+      return [];
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { shopId: shop.id },
+      orderBy: { createdAt: 'desc' },
+      include: { shop: true },
+    });
+
+    return products.map((p) => this.formatProduct(p));
+  }
+
   async findAll(query: {
     search?: string;
     category?: string;
@@ -43,8 +61,13 @@ export class ProductsService {
     maxPrice?: number;
     city?: string;
     sortBy?: string;
+    shopId?: string;
   }) {
     const where: any = {};
+
+    if (query.shopId) {
+      where.shopId = query.shopId;
+    }
 
     if (query.category && query.category !== 'all' && query.category !== 'All Categories') {
       where.category = query.category;
