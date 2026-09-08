@@ -5,7 +5,7 @@ export const INITIAL_SHOPS: Shop[] = [
     id: "shop-1",
     name: "Kochi Gadgets World",
     ownerName: "Rajesh Kumar",
-    phone: "+91 98765 43210",
+    phone: "+91 98765 43210",        
     whatsapp: "919876543210",
     address: "Shop 42, Ground Floor, Penta Menaka, Shanmugham Road",
     city: "Kochi",
@@ -120,13 +120,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "Battery Health": "90%",
       "Box & Cable": "Available"
     },
-    images: [
-      "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800",
-      "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800",
-      "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800",
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800",
-      "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=800"
-    ]
+    images: ["/images/iphone_17_pro_1.png"]
   },
   {
     id: "prod-2",

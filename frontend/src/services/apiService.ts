@@ -27,6 +27,20 @@ export async function getProducts(params?: {
   return result.data?.products ?? (Array.isArray(result) ? result : []);
 }
 
+export async function getProductsByCategory(category: string): Promise<Product[]> {
+  const res = await fetch(`${API_BASE_URL}/products/category/${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error('Failed to fetch products by category');
+  const result = await res.json();
+  return result.data?.products ?? (Array.isArray(result) ? result : []);
+}
+
+export async function getProductsByBrand(brand: string): Promise<Product[]> {
+  const res = await fetch(`${API_BASE_URL}/products/brand/${encodeURIComponent(brand)}`);
+  if (!res.ok) throw new Error('Failed to fetch products by brand');
+  const result = await res.json();
+  return result.data?.products ?? (Array.isArray(result) ? result : []);
+}
+
 export async function getShops(): Promise<Shop[]> {
   const res = await fetch(`${API_BASE_URL}/shops`);
   if (!res.ok) throw new Error('Failed to fetch shops');

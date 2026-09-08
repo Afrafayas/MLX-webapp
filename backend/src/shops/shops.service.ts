@@ -12,18 +12,28 @@ export class ShopsService {
     });
 
     if (existing) {
-      return this.prisma.shop.update({
+      const shop = await this.prisma.shop.update({
         where: { ownerId },
         data: dto,
       });
+      return {
+        success: true,
+        message: 'Shop updated successfully',
+        data: { shop },
+      };
     }
 
-    return this.prisma.shop.create({
+    const shop = await this.prisma.shop.create({
       data: {
         ...dto,
         ownerId,
       },
     });
+    return {
+      success: true,
+      message: 'Shop created successfully',
+      data: { shop },
+    };
   }
 
   async findAll(query?: { city?: string; category?: string; search?: string }) {
@@ -76,6 +86,12 @@ export class ShopsService {
       throw new NotFoundException(`Shop with ID ${id} not found`);
     }
 
-    return shop;
+    return {
+      success: true,
+      message: 'Shop fetched successfully',
+      data: {
+        shop,
+      },
+    };
   }
 }

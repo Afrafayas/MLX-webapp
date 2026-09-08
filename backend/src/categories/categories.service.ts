@@ -16,13 +16,20 @@ export class CategoriesService {
     }
 
     const slug = dto.slug || dto.name.toLowerCase().replace(/\s+/g, '-');
-    return this.prisma.category.create({
+    const category = await this.prisma.category.create({
       data: {
         name: dto.name,
         slug,
         image: dto.image || null,
       },
     });
+    return {
+      success: true,
+      message: 'Category created successfully',
+      data: {
+        category,
+      },
+    };
   }
 
   async findAll() {
@@ -45,19 +52,38 @@ export class CategoriesService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
-    return category;
+    return {
+      success: true,
+      message: 'Category fetched successfully',
+      data: {
+        category,
+      },
+    };
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
-    await this.findOne(id);
-    return this.prisma.category.update({
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+    const category = await this.prisma.category.update({
       where: { id },
       data: dto,
     });
+    return {
+      success: true,
+      message: 'Category updated successfully',
+      data: {
+        category,
+      },
+    };
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
     await this.prisma.category.delete({
       where: { id },
     });

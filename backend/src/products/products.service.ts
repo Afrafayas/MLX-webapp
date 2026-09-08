@@ -32,7 +32,13 @@ export class ProductsService {
       },
     });
 
-    return this.formatProduct(product);
+    return {
+      success: true,
+      message: 'Product created successfully',
+      data: {
+        product: this.formatProduct(product),
+      },
+    };
   }
 
   async findMine(sellerUserId: string) {
@@ -140,7 +146,55 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    return this.formatProduct(product);
+    return {
+      success: true,
+      message: 'Product fetched successfully',
+      data: {
+        product: this.formatProduct(product),
+      },
+    };
+  }
+
+  async findByCategory(category: string) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        category: {
+          contains: category,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { shop: true },
+    });
+
+    return {
+      success: true,
+      message: `Products for category "${category}" fetched successfully`,
+      data: {
+        products: products.map((p) => this.formatProduct(p)),
+      },
+    };
+  }
+
+  async findByBrand(brand: string) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        brand: {
+          contains: brand,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { shop: true },
+    });
+
+    return {
+      success: true,
+      message: `Products for brand "${brand}" fetched successfully`,
+      data: {
+        products: products.map((p) => this.formatProduct(p)),
+      },
+    };
   }
 
   async remove(id: string, sellerUserId: string) {

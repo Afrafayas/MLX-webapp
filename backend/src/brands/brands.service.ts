@@ -15,12 +15,19 @@ export class BrandsService {
       throw new BadRequestException(`Brand "${dto.name}" already exists`);
     }
 
-    return this.prisma.brand.create({
+    const brand = await this.prisma.brand.create({
       data: {
         name: dto.name,
         logo: dto.logo || null,
       },
     });
+    return {
+      success: true,
+      message: 'Brand created successfully',
+      data: {
+        brand,
+      },
+    };
   }
 
   async findAll() {
@@ -43,19 +50,38 @@ export class BrandsService {
     if (!brand) {
       throw new NotFoundException(`Brand with ID ${id} not found`);
     }
-    return brand;
+    return {
+      success: true,
+      message: 'Brand fetched successfully',
+      data: {
+        brand,
+      },
+    };
   }
 
   async update(id: string, dto: UpdateBrandDto) {
-    await this.findOne(id);
-    return this.prisma.brand.update({
+    const existing = await this.prisma.brand.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Brand with ID ${id} not found`);
+    }
+    const brand = await this.prisma.brand.update({
       where: { id },
       data: dto,
     });
+    return {
+      success: true,
+      message: 'Brand updated successfully',
+      data: {
+        brand,
+      },
+    };
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const existing = await this.prisma.brand.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Brand with ID ${id} not found`);
+    }
     await this.prisma.brand.delete({
       where: { id },
     });

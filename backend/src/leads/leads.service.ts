@@ -12,7 +12,7 @@ export class LeadsService {
       throw new NotFoundException('Shop not found');
     }
 
-    return this.prisma.lead.create({
+    const lead = await this.prisma.lead.create({
       data: {
         shopId: dto.shopId,
         productId: dto.productId,
@@ -22,6 +22,14 @@ export class LeadsService {
         contactType: dto.contactType,
       },
     });
+
+    return {
+      success: true,
+      message: 'Lead created successfully',
+      data: {
+        lead,
+      },
+    };
   }
 
   async getSellerLeads(sellerUserId: string) {

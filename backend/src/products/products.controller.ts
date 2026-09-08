@@ -27,6 +27,16 @@ export class ProductsController {
     return this.productsService.findAll({ search, category, brand, minPrice, maxPrice, city, sortBy, shopId });
   }
 
+  @Get('category/:category')
+  async findByCategory(@Param('category') category: string) {
+    return this.productsService.findByCategory(category);
+  }
+
+  @Get('brand/:brand')
+  async findByBrand(@Param('brand') brand: string) {
+    return this.productsService.findByBrand(brand);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
