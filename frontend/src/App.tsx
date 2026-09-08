@@ -1,7 +1,7 @@
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ManageCategoriesBrandsModal } from './components/ManageCategoriesBrandsModal';
 import { Footer } from './components/Footer';
-import { getProducts, getShops, registerUser, getSellerProducts, createSellerProduct } from './services/apiService';
+import { getProducts, getShops, registerUser, createSellerProduct } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
 import { 
   Search, 
@@ -2039,7 +2039,7 @@ export default function App() {
       <ManageCategoriesBrandsModal
         isOpen={isCatBrandModalOpen}
         onClose={() => setIsCatBrandModalOpen(false)}
-        onToast={addToast}
+        onToast={triggerToast}
       />
 
       <ProductDetailModal getSellerShop={getSellerShop} onCallSeller={handleCallSeller} onWhatsAppSeller={handleWhatsAppSeller} />
