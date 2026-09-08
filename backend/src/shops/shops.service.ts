@@ -4,7 +4,7 @@ import { CreateShopDto } from './dto/create-shop.dto';
 
 @Injectable()
 export class ShopsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createOrUpdateForOwner(ownerId: string, dto: CreateShopDto) {
     const existing = await this.prisma.shop.findUnique({

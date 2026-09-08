@@ -5,7 +5,7 @@ import { CreateShopDto } from './dto/create-shop.dto';
 
 @Controller('shops')
 export class ShopsController {
-  constructor(private readonly shopsService: ShopsService) {}
+  constructor(private readonly shopsService: ShopsService) { }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('mine')
