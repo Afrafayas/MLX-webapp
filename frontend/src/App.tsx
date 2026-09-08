@@ -1,4 +1,5 @@
 import { ProductDetailModal } from './components/ProductDetailModal';
+import { ManageCategoriesBrandsModal } from './components/ManageCategoriesBrandsModal';
 import { Footer } from './components/Footer';
 import { getProducts, getShops, registerUser, getSellerProducts, createSellerProduct } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
@@ -222,6 +223,7 @@ export default function App() {
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [currentSlide, setCurrentSlide] = React.useState(0);
+  const [isCatBrandModalOpen, setIsCatBrandModalOpen] = React.useState(false);
 
   const slides = [
     {
@@ -1772,6 +1774,14 @@ export default function App() {
                 <User size={16} />
                 <span>Edit Shop Profile</span>
               </button>
+
+              <button 
+                className="dash-menu-btn"
+                onClick={() => setIsCatBrandModalOpen(true)}
+              >
+                <Tag size={16} />
+                <span>Manage Categories & Brands</span>
+              </button>
               
               <button className="dash-menu-btn" onClick={() => navigate('/')} style={{ borderTop: '1px solid var(--light-border)', marginTop: '0.5rem', paddingTop: '1rem' }}>
                 <Store size={16} />
@@ -2025,6 +2035,12 @@ export default function App() {
       } /></Routes>
 
       <Footer />
+
+      <ManageCategoriesBrandsModal
+        isOpen={isCatBrandModalOpen}
+        onClose={() => setIsCatBrandModalOpen(false)}
+        onToast={addToast}
+      />
 
       <ProductDetailModal getSellerShop={getSellerShop} onCallSeller={handleCallSeller} onWhatsAppSeller={handleWhatsAppSeller} />
 
