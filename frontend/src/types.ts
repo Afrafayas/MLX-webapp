@@ -19,6 +19,23 @@ export interface User {
   phone: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  logo?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Lead {
   id: string;
   shopId: string;

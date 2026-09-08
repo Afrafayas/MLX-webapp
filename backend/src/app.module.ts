@@ -8,6 +8,9 @@ import { LeadsModule } from './leads/leads.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+import { CategoriesModule } from './categories/categories.module';
+import { BrandsModule } from './brands/brands.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -16,6 +19,8 @@ import { AppService } from './app.service';
     ShopsModule,
     ProductsModule,
     LeadsModule,
+    CategoriesModule,
+    BrandsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

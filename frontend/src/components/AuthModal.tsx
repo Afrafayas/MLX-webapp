@@ -11,6 +11,7 @@ import {
 import { addShop } from '../store/productsSlice';
 import { Shop, User as CustomerUser } from '../types';
 import { CITIES } from '../data/mockData';
+import { registerUser, loginUser } from '../services/apiService';
 
 interface AuthModalProps {
   onToast: (msg: string, type?: 'success' | 'info') => void;
@@ -43,67 +44,124 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onToast }) => {
 
   if (!showAuthModal) return null;
 
-  const handleLoginSubmit = (e: FormEvent) => {
+  const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (authRole === 'customer') {
-      const user: CustomerUser = {
-        id: `user-${Date.now()}`,
-        name: loginEmail.split('@')[0] || 'Logged Customer',
-        email: loginEmail,
-        phone: '+91 98765 00000'
-      };
-      dispatch(setActiveUser(user));
-      onToast(`Welcome back, ${user.name}!`, 'success');
-    } else {
-      const shop = shops[0] || {
-        id: `shop-${Date.now()}`,
-        name: 'Kochi iStore Mobiles',
-        ownerName: 'Afraf Fayas',
-        phone: '+91 98765 43210',
-        whatsapp: '919876543210',
-        address: 'MG Road, Broadway Corner',
-        city: 'Kochi',
-        category: 'Mobiles & Tablets',
-        verified: true,
-        rating: 5.0,
-        joinedDate: 'Today'
-      };
-      dispatch(setActiveShop(shop));
-      onToast(`Seller Shop Logged In: ${shop.name}`, 'success');
+    if (!loginEmail || !loginPassword) {
+      onToast('Email address and Password are required to sign in', 'info');
+      return;
     }
-    dispatch(setShowAuthModal(false));
+
+    try {
+      const resData = await loginUser({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (resData.token) {
+        localStorage.setItem('mlx_token', resData.token);
+      }
+
+      if (resData.user?.role === 'seller' || authRole === 'seller') {
+        const shop: Shop = resData.user?.shop || shops[0] || {
+          id: resData.user?.id || `shop-${Date.now()}`,
+          name: resData.user?.name || 'Seller Shop',
+          ownerName: resData.user?.name || 'Shop Owner',
+          phone: resData.user?.phone || '+91 98765 43210',
+          whatsapp: resData.user?.phone || '919876543210',
+          address: 'Kochi Market',
+          city: 'Kochi',
+          category: 'Mobiles & Tablets',
+          verified: true,
+          rating: 5.0,
+          joinedDate: 'Today'
+        };
+        dispatch(setActiveShop(shop));
+        onToast(`Merchant Shop Signed In: ${shop.name}`, 'success');
+      } else {
+        const user: CustomerUser = {
+          id: resData.user?.id || `user-${Date.now()}`,
+          name: resData.user?.name || loginEmail.split('@')[0],
+          email: resData.user?.email || loginEmail,
+          phone: resData.user?.phone || '+91 98765 00000'
+        };
+        dispatch(setActiveUser(user));
+        onToast(`Welcome back, ${user.name}!`, 'success');
+      }
+      dispatch(setShowAuthModal(false));
+    } catch (err: any) {
+      alert(err.message || 'Login failed. Please check credentials.');
+    }
   };
 
-  const handleRegSubmit = (e: FormEvent) => {
+  const handleRegSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (authRole === 'customer') {
-      const user: CustomerUser = {
-        id: `user-${Date.now()}`,
-        name: regForm.name,
-        email: regForm.email,
-        phone: regForm.phone
-      };
-      dispatch(setActiveUser(user));
-      onToast(`Customer account created! Welcome ${user.name}`, 'success');
-    } else {
-      const newShop: Shop = {
-        id: `shop-${Date.now()}`,
-        name: regForm.shopName || regForm.name,
-        ownerName: regForm.ownerName || regForm.name,
-        phone: regForm.phone,
-        whatsapp: regForm.whatsapp || regForm.phone,
-        address: regForm.address,
-        city: regForm.city,
-        category: regForm.category,
-        verified: true,
-        rating: 5.0,
-        joinedDate: 'Today'
-      };
-      dispatch(addShop(newShop));
-      dispatch(setActiveShop(newShop));
-      onToast(`Merchant Shop Registered: ${newShop.name}`, 'success');
+    if (!regForm.email || !regForm.password) {
+      onToast('Email address and Password are required', 'info');
+      return;
     }
-    dispatch(setShowAuthModal(false));
+
+    try {
+      if (authRole === 'customer') {
+        const resData = await registerUser({
+          email: regForm.email,
+          password: regForm.password,
+          name: regForm.name,
+          phone: regForm.phone,
+          role: 'customer'
+        });
+
+        if (resData.token) {
+          localStorage.setItem('mlx_token', resData.token);
+        }
+
+        const user: CustomerUser = {
+          id: resData.user?.id || `user-${Date.now()}`,
+          name: resData.user?.name || regForm.name,
+          email: resData.user?.email || regForm.email,
+          phone: resData.user?.phone || regForm.phone
+        };
+        dispatch(setActiveUser(user));
+        onToast(`Customer account created! Welcome ${user.name}`, 'success');
+      } else {
+        const resData = await registerUser({
+          email: regForm.email,
+          password: regForm.password,
+          name: regForm.shopName || regForm.name || regForm.ownerName,
+          phone: regForm.phone,
+          role: 'seller',
+          shopName: regForm.shopName || regForm.name,
+          ownerName: regForm.ownerName || regForm.name,
+          whatsapp: regForm.whatsapp || regForm.phone,
+          address: regForm.address,
+          city: regForm.city,
+          category: regForm.category,
+        });
+
+        if (resData.token) {
+          localStorage.setItem('mlx_token', resData.token);
+        }
+
+        const newShop: Shop = resData.user?.shop || {
+          id: resData.user?.id || `shop-${Date.now()}`,
+          name: regForm.shopName || regForm.name,
+          ownerName: regForm.ownerName || regForm.name,
+          phone: regForm.phone,
+          whatsapp: regForm.whatsapp || regForm.phone,
+          address: regForm.address,
+          city: regForm.city,
+          category: regForm.category,
+          verified: true,
+          rating: 5.0,
+          joinedDate: 'Today'
+        };
+        dispatch(addShop(newShop));
+        dispatch(setActiveShop(newShop));
+        onToast(`Merchant Shop Registered: ${newShop.name}`, 'success');
+      }
+      dispatch(setShowAuthModal(false));
+    } catch (err: any) {
+      alert(err.message || 'Registration failed');
+    }
   };
 
   return (
@@ -147,7 +205,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onToast }) => {
                 type="email" 
                 className="form-input-text" 
                 required 
-                placeholder="e.g. store@gmail.com"
+                placeholder="e.g. store@gmail.com or user@gmail.com"
                 value={loginEmail}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setLoginEmail(e.target.value)}
               />
@@ -179,15 +237,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onToast }) => {
               <>
                 <div className="form-group">
                   <label className="form-label">Full Name *</label>
-                  <input type="text" className="form-input-text" required value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} />
+                  <input type="text" className="form-input-text" required placeholder="e.g. Rahul Kumar" value={regForm.name} onChange={(e) => setRegForm({ ...regForm, name: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Email Address *</label>
-                  <input type="email" className="form-input-text" required value={regForm.email} onChange={(e) => setRegForm({ ...regForm, email: e.target.value })} />
+                  <input type="email" className="form-input-text" required placeholder="e.g. rahul@gmail.com" value={regForm.email} onChange={(e) => setRegForm({ ...regForm, email: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password *</label>
+                  <input type="password" className="form-input-text" required placeholder="••••••••" value={regForm.password} onChange={(e) => setRegForm({ ...regForm, password: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Phone Number *</label>
-                  <input type="text" className="form-input-text" required value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} />
+                  <input type="text" className="form-input-text" required placeholder="+91 9876543210" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} />
                 </div>
               </>
             ) : (
@@ -199,6 +261,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onToast }) => {
                 <div className="form-group">
                   <label className="form-label">Owner Name *</label>
                   <input type="text" className="form-input-text" required placeholder="e.g. Afraf Fayas" value={regForm.ownerName} onChange={(e) => setRegForm({ ...regForm, ownerName: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email Address *</label>
+                  <input type="email" className="form-input-text" required placeholder="e.g. store@gmail.com" value={regForm.email} onChange={(e) => setRegForm({ ...regForm, email: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password *</label>
+                  <input type="password" className="form-input-text" required placeholder="••••••••" value={regForm.password} onChange={(e) => setRegForm({ ...regForm, password: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Call Phone Number *</label>

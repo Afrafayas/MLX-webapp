@@ -1,6 +1,6 @@
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { Footer } from './components/Footer';
-import { getProducts, getShops } from './services/apiService';
+import { getProducts, getShops, registerUser, getSellerProducts, createSellerProduct } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
 import { 
   Search, 
@@ -186,9 +186,17 @@ export default function App() {
   React.useEffect(() => {
     async function loadLiveBackendData() {
       try {
-        const liveProducts = await getProducts();
+        const liveProducts = await getProducts({
+          search: filters.searchQuery,
+          category: filters.selectedCategory,
+          brand: filters.filterBrand,
+          minPrice: filters.filterMinPrice,
+          maxPrice: filters.filterMaxPrice,
+          city: filters.filterCity,
+          sortBy: filters.sortBy,
+        });
         const liveShops = await getShops();
-        if (liveProducts && liveProducts.length > 0) {
+        if (liveProducts) {
           dispatch(setProducts(liveProducts));
         }
         if (liveShops && liveShops.length > 0) {
@@ -199,7 +207,16 @@ export default function App() {
       }
     }
     loadLiveBackendData();
-  }, [dispatch]);
+  }, [
+    dispatch,
+    filters.searchQuery,
+    filters.selectedCategory,
+    filters.filterBrand,
+    filters.filterMinPrice,
+    filters.filterMaxPrice,
+    filters.filterCity,
+    filters.sortBy,
+  ]);
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
@@ -270,6 +287,8 @@ export default function App() {
   const [registerForm, setRegisterForm] = React.useState({
     name: '',
     ownerName: '',
+    email: '',
+    password: '',
     phone: '',
     whatsapp: '',
     address: '',
@@ -589,44 +608,68 @@ export default function App() {
     }
   };
 
-  const handleRegisterSubmit = (e: FormEvent) => {
+  const handleRegisterSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (authRole === 'seller') {
-      if (!registerForm.name || !registerForm.ownerName || !registerForm.phone || !registerForm.whatsapp) {
-        alert("Please fill in all mandatory fields.");
+      if (!registerForm.name || !registerForm.ownerName || !registerForm.phone || !registerForm.whatsapp || !registerForm.email || !registerForm.password) {
+        alert("Please fill in all mandatory fields including Email and Password.");
         return;
       }
-      const newShop: Shop = {
-        id: `shop-${shops.length + 1}`,
-        name: registerForm.name,
-        ownerName: registerForm.ownerName,
-        phone: registerForm.phone,
-        whatsapp: registerForm.whatsapp.replace(/\D/g, ''),
-        address: registerForm.address || "Dealer Main Market",
-        city: registerForm.city,
-        category: registerForm.category,
-        verified: true,
-        rating: 5.0,
-        joinedDate: "Today"
-      };
+      try {
+        const resData = await registerUser({
+          email: registerForm.email,
+          password: registerForm.password,
+          name: registerForm.name,
+          phone: registerForm.phone,
+          role: 'seller',
+          shopName: registerForm.name,
+          ownerName: registerForm.ownerName,
+          whatsapp: registerForm.whatsapp.replace(/\D/g, ''),
+          address: registerForm.address || "Dealer Main Market",
+          city: registerForm.city,
+          category: registerForm.category,
+        });
 
-      dispatch(addShop(newShop));
-      dispatch(setActiveShop(newShop));
-      dispatch(setActiveUser(null));
-      dispatch(setShowAuthModal(false));
-      triggerToast(`Shop "${registerForm.name}" registered and logged in!`, 'success');
-      navigate('/seller-dashboard');
-      
-      // reset form
-      setRegisterForm({
-        name: '',
-        ownerName: '',
-        phone: '',
-        whatsapp: '',
-        address: '',
-        city: 'New Delhi',
-        category: 'Mobiles & Tablets'
-      });
+        if (resData.token) {
+          localStorage.setItem('mlx_token', resData.token);
+        }
+
+        const newShop: Shop = resData.user?.shop || {
+          id: resData.user?.id || `shop-${shops.length + 1}`,
+          name: registerForm.name,
+          ownerName: registerForm.ownerName,
+          phone: registerForm.phone,
+          whatsapp: registerForm.whatsapp.replace(/\D/g, ''),
+          address: registerForm.address || "Dealer Main Market",
+          city: registerForm.city,
+          category: registerForm.category,
+          verified: true,
+          rating: 5.0,
+          joinedDate: "Today"
+        };
+
+        dispatch(addShop(newShop));
+        dispatch(setActiveShop(newShop));
+        dispatch(setActiveUser(resData.user || null));
+        dispatch(setShowAuthModal(false));
+        triggerToast(`Shop "${registerForm.name}" registered in DB successfully!`, 'success');
+        navigate('/seller-dashboard');
+        
+        // reset form
+        setRegisterForm({
+          name: '',
+          ownerName: '',
+          email: '',
+          password: '',
+          phone: '',
+          whatsapp: '',
+          address: '',
+          city: 'Kochi',
+          category: 'Mobiles & Tablets'
+        });
+      } catch (err: any) {
+        alert(err.message || "Failed to register shop account in database.");
+      }
     } else {
       // Customer registration logic
       if (!customerRegisterForm.name || !customerRegisterForm.email || !customerRegisterForm.phone) {
@@ -701,7 +744,7 @@ export default function App() {
     dispatch(setShowAddEditModal(true));
   };
 
-  const handleProductSubmit = (e: FormEvent) => {
+  const handleProductSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!activeShop) return;
 
@@ -751,31 +794,76 @@ export default function App() {
       dispatch(editProduct(updated));
       triggerToast("Listing updated successfully!", "success");
     } else {
-      const newProduct: Product = {
-        id: `prod-${Date.now()}`,
-        name: productForm.name,
-        brand: productForm.brand,
-        category: productForm.category,
-        description: productForm.description,
-        price: parseFloat(productForm.price),
-        offerPrice: offerPriceNum,
-        stock: parseInt(productForm.stock),
-        shopId: activeShop.id,
-        storage: productForm.storage,
-        ram: productForm.ram,
-        batteryHealth: productForm.batteryHealth,
-        condition: productForm.condition,
-        warranty: productForm.warranty,
-        color: productForm.color,
-        simType: productForm.simType,
-        network: productForm.network,
-        originalBill: productForm.originalBill,
-        accessories: productForm.accessories,
-        specs,
-        images: validImages
-      };
-      dispatch(addProduct(newProduct));
-      triggerToast("New used gadget listed successfully!", "success");
+      const token = localStorage.getItem('mlx_token');
+      if (token) {
+        try {
+          const savedProd = await createSellerProduct({
+            name: productForm.name,
+            brand: productForm.brand,
+            category: productForm.category,
+            description: productForm.description,
+            price: parseFloat(productForm.price),
+            stock: parseInt(productForm.stock),
+            specs,
+            images: validImages
+          }, token);
+
+          const newProduct: Product = {
+            id: savedProd.id || `prod-${Date.now()}`,
+            name: savedProd.name || productForm.name,
+            brand: savedProd.brand || productForm.brand,
+            category: savedProd.category || productForm.category,
+            description: savedProd.description || productForm.description,
+            price: savedProd.price || parseFloat(productForm.price),
+            offerPrice: offerPriceNum,
+            stock: savedProd.stock || parseInt(productForm.stock),
+            shopId: savedProd.shopId || activeShop.id,
+            storage: productForm.storage,
+            ram: productForm.ram,
+            batteryHealth: productForm.batteryHealth,
+            condition: productForm.condition,
+            warranty: productForm.warranty,
+            color: productForm.color,
+            simType: productForm.simType,
+            network: productForm.network,
+            originalBill: productForm.originalBill,
+            accessories: productForm.accessories,
+            specs: savedProd.specs || specs,
+            images: savedProd.images || validImages
+          };
+          dispatch(addProduct(newProduct));
+          triggerToast("New used gadget listed in database successfully!", "success");
+        } catch (err: any) {
+          alert(err.message || 'Failed to list product in database');
+          return;
+        }
+      } else {
+        const newProduct: Product = {
+          id: `prod-${Date.now()}`,
+          name: productForm.name,
+          brand: productForm.brand,
+          category: productForm.category,
+          description: productForm.description,
+          price: parseFloat(productForm.price),
+          offerPrice: offerPriceNum,
+          stock: parseInt(productForm.stock),
+          shopId: activeShop.id,
+          storage: productForm.storage,
+          ram: productForm.ram,
+          batteryHealth: productForm.batteryHealth,
+          condition: productForm.condition,
+          warranty: productForm.warranty,
+          color: productForm.color,
+          simType: productForm.simType,
+          network: productForm.network,
+          originalBill: productForm.originalBill,
+          accessories: productForm.accessories,
+          specs,
+          images: validImages
+        };
+        dispatch(addProduct(newProduct));
+        triggerToast("New used gadget listed successfully!", "success");
+      }
     }
 
     dispatch(setShowAddEditModal(false));
@@ -2354,6 +2442,30 @@ export default function App() {
                       placeholder="e.g. Vikram Mehta"
                       value={registerForm.ownerName}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, ownerName: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email Address *</label>
+                    <input 
+                      type="email" 
+                      className="form-input-text" 
+                      required
+                      placeholder="e.g. store@gmail.com"
+                      value={registerForm.email}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, email: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Password *</label>
+                    <input 
+                      type="password" 
+                      className="form-input-text" 
+                      required
+                      placeholder="••••••••"
+                      value={registerForm.password}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setRegisterForm({...registerForm, password: e.target.value})}
                     />
                   </div>
 

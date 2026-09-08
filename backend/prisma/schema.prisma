@@ -76,3 +76,20 @@ model Lead {
   productId     String   @db.ObjectId
   product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
+
+model Category {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  slug      String?  @unique
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brand {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  logo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

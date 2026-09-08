@@ -21,4 +21,28 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(['customer', 'seller'], { message: 'Role must be customer or seller' })
   role?: string;
+
+  @IsOptional()
+  @IsString()
+  shopName?: string;
+
+  @IsOptional()
+  @IsString()
+  ownerName?: string;
+
+  @IsOptional()
+  @IsString()
+  whatsapp?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
 }

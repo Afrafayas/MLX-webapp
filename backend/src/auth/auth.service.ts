@@ -21,7 +21,25 @@ export class AuthService {
 
     if (role === 'seller') {
       if (!dto.email) {
-        throw new BadRequestException('Email is required for seller registration');
+        throw new BadRequestException('Email address is required for registration');
+      }
+      if (!dto.shopName && !dto.name) {
+        throw new BadRequestException('Shop business name is required for registration');
+      }
+      if (!dto.ownerName) {
+        throw new BadRequestException('Owner name is required for registration');
+      }
+      if (!dto.phone) {
+        throw new BadRequestException('Phone number is required for registration');
+      }
+      if (!dto.whatsapp) {
+        throw new BadRequestException('WhatsApp number is required for registration');
+      }
+      if (!dto.address) {
+        throw new BadRequestException('Business physical address is required for registration');
+      }
+      if (!dto.city) {
+        throw new BadRequestException('City is required for registration');
       }
     } else {
       if (!dto.phone && !dto.email) {
@@ -50,6 +68,19 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    let shopCreateData: any = undefined;
+    if (role === 'seller') {
+      shopCreateData = {
+        name: dto.shopName || dto.name,
+        ownerName: dto.ownerName || dto.name,
+        phone: dto.phone || '',
+        whatsapp: dto.whatsapp || dto.phone || '',
+        address: dto.address || 'Market Location',
+        city: dto.city || 'Kochi',
+        category: dto.category || 'Mobiles & Tablets',
+      };
+    }
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email ? dto.email.toLowerCase() : null,
@@ -57,6 +88,7 @@ export class AuthService {
         name: dto.name,
         phone: dto.phone || null,
         role: role,
+        ...(shopCreateData ? { shop: { create: shopCreateData } } : {}),
       },
       include: {
         shop: true,
