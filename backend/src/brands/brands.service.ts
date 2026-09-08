@@ -24,9 +24,16 @@ export class BrandsService {
   }
 
   async findAll() {
-    return this.prisma.brand.findMany({
+    const brands = await this.prisma.brand.findMany({
       orderBy: { name: 'asc' },
     });
+    return {
+      success: true,
+      message: 'Brands fetched successfully',
+      data: {
+        brands,
+      },
+    };
   }
 
   async findOne(id: string) {

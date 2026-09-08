@@ -30,12 +30,20 @@ export class LeadsService {
       throw new ForbiddenException('No shop found for this seller account');
     }
 
-    return this.prisma.lead.findMany({
+    const leads = await this.prisma.lead.findMany({
       where: { shopId: shop.id },
       orderBy: { createdAt: 'desc' },
       include: {
         product: true,
       },
     });
+
+    return {
+      success: true,
+      message: 'Leads fetched successfully',
+      data: {
+        leads,
+      },
+    };
   }
 }

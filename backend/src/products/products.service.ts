@@ -41,7 +41,13 @@ export class ProductsService {
     });
 
     if (!shop) {
-      return [];
+      return {
+        success: true,
+        message: 'Products fetched successfully',
+        data: {
+          products: [],
+        },
+      };
     }
 
     const products = await this.prisma.product.findMany({
@@ -50,7 +56,13 @@ export class ProductsService {
       include: { shop: true },
     });
 
-    return products.map((p) => this.formatProduct(p));
+    return {
+      success: true,
+      message: 'Products fetched successfully',
+      data: {
+        products: products.map((p) => this.formatProduct(p)),
+      },
+    };
   }
 
   async findAll(query: {
@@ -109,7 +121,13 @@ export class ProductsService {
       },
     });
 
-    return products.map((p) => this.formatProduct(p));
+    return {
+      success: true,
+      message: 'Products fetched successfully',
+      data: {
+        products: products.map((p) => this.formatProduct(p)),
+      },
+    };
   }
 
   async findOne(id: string) {

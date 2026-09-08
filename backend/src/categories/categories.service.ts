@@ -26,9 +26,16 @@ export class CategoriesService {
   }
 
   async findAll() {
-    return this.prisma.category.findMany({
+    const categories = await this.prisma.category.findMany({
       orderBy: { name: 'asc' },
     });
+    return {
+      success: true,
+      message: 'Categories fetched successfully',
+      data: {
+        categories,
+      },
+    };
   }
 
   async findOne(id: string) {

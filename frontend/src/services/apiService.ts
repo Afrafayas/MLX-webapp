@@ -23,20 +23,23 @@ export async function getProducts(params?: {
 
   const res = await fetch(`${API_BASE_URL}/products?${query.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch products');
-  return res.json();
+  const result = await res.json();
+  return result.data?.products ?? (Array.isArray(result) ? result : []);
 }
 
 export async function getShops(): Promise<Shop[]> {
   const res = await fetch(`${API_BASE_URL}/shops`);
   if (!res.ok) throw new Error('Failed to fetch shops');
-  return res.json();
+  const result = await res.json();
+  return result.data?.shops ?? (Array.isArray(result) ? result : []);
 }
 
 /* Category CRUD APIs */
 export async function getCategories(): Promise<Category[]> {
   const res = await fetch(`${API_BASE_URL}/categories`);
   if (!res.ok) throw new Error('Failed to fetch categories');
-  return res.json();
+  const result = await res.json();
+  return result.data?.categories ?? (Array.isArray(result) ? result : []);
 }
 
 export async function createCategory(data: { name: string; slug?: string; image?: string }, token: string): Promise<Category> {
@@ -81,7 +84,8 @@ export async function deleteCategory(id: string, token: string): Promise<{ succe
 export async function getBrands(): Promise<Brand[]> {
   const res = await fetch(`${API_BASE_URL}/brands`);
   if (!res.ok) throw new Error('Failed to fetch brands');
-  return res.json();
+  const result = await res.json();
+  return result.data?.brands ?? (Array.isArray(result) ? result : []);
 }
 
 export async function createBrand(data: { name: string; logo?: string }, token: string): Promise<Brand> {
@@ -183,7 +187,8 @@ export async function getSellerLeads(token: string): Promise<Lead[]> {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Failed to fetch seller leads');
-  return res.json();
+  const result = await res.json();
+  return result.data?.leads ?? (Array.isArray(result) ? result : []);
 }
 
 export async function getSellerProducts(token: string): Promise<Product[]> {
@@ -191,7 +196,8 @@ export async function getSellerProducts(token: string): Promise<Product[]> {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Failed to fetch shop products');
-  return res.json();
+  const result = await res.json();
+  return result.data?.products ?? (Array.isArray(result) ? result : []);
 }
 
 export async function createSellerProduct(

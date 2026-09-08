@@ -45,7 +45,7 @@ export class ShopsService {
       ];
     }
 
-    return this.prisma.shop.findMany({
+    const shops = await this.prisma.shop.findMany({
       where,
       include: {
         _count: {
@@ -54,6 +54,14 @@ export class ShopsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return {
+      success: true,
+      message: 'Shops fetched successfully',
+      data: {
+        shops,
+      },
+    };
   }
 
   async findOne(id: string) {
