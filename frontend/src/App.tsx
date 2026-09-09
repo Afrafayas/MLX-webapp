@@ -263,7 +263,8 @@ export default function App() {
   const [customerRegisterForm, setCustomerRegisterForm] = React.useState({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
+    password: ''
   });
 
   // customer dashboard sub-navigation tab state
@@ -678,8 +679,8 @@ export default function App() {
       }
     } else {
       // Customer registration logic
-      if (!customerRegisterForm.name || !customerRegisterForm.email || !customerRegisterForm.phone) {
-        alert("Please fill in all fields.");
+      if (!customerRegisterForm.name || !customerRegisterForm.email || !customerRegisterForm.phone || !customerRegisterForm.password) {
+        alert("Please fill in all mandatory fields including Password.");
         return;
       }
       const newCust: CustomerUser = {
@@ -709,7 +710,8 @@ export default function App() {
       setCustomerRegisterForm({
         name: '',
         email: '',
-        phone: ''
+        phone: '',
+        password: ''
       });
     }
   };
@@ -2605,6 +2607,18 @@ export default function App() {
                       placeholder="e.g. +91 94460 55432"
                       value={customerRegisterForm.phone}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerRegisterForm({...customerRegisterForm, phone: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Password *</label>
+                    <input 
+                      type="password" 
+                      className="form-input-text" 
+                      required
+                      placeholder="••••••••"
+                      value={customerRegisterForm.password}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerRegisterForm({...customerRegisterForm, password: e.target.value})}
                     />
                   </div>
 
