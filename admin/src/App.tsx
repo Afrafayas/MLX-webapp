@@ -6,11 +6,15 @@ import { ShopsTable } from './components/ShopsTable';
 import { EditShopModal } from './components/EditShopModal';
 import { ShopDetailDrawer } from './components/ShopDetailDrawer';
 import { DeleteShopModal } from './components/DeleteShopModal';
+import { AdminLogin } from './components/AdminLogin';
 import { Shop, AdminStats } from './types';
 import { fetchStats, fetchShops, fetchShopById, toggleVerifyShop, updateShop, deleteShop } from './services/adminApi';
 import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return Boolean(localStorage.getItem('cbez_admin_token'));
+  });
   const [activeTab, setActiveTab] = useState<string>('shops');
   const [stats, setStats] = useState<AdminStats>({
     totalShops: 0,
@@ -115,10 +119,20 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('cbez_admin_token');
+    localStorage.removeItem('cbez_admin_user');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} pendingCount={stats.pendingShops} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} pendingCount={stats.pendingShops} onLogout={handleLogout} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">

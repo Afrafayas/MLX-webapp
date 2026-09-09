@@ -19,7 +19,7 @@ export class RegisterDto {
   phone?: string;
 
   @IsOptional()
-  @IsIn(['customer', 'seller'], { message: 'Role must be customer or seller' })
+  @IsIn(['customer', 'seller', 'admin'], { message: 'Role must be customer, seller, or admin' })
   role?: string;
 
   @IsOptional()

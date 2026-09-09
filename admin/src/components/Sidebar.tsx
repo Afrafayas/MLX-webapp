@@ -5,9 +5,10 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   pendingCount: number;
+  onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, pendingCount }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, pendingCount, onLogout }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'shops', label: 'Manage Shops', icon: Store, badge: pendingCount > 0 ? pendingCount : null },
@@ -76,7 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, pendi
               Live Session
             </div>
           </div>
-          <button className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors" title="Log out">
+          <button
+            onClick={onLogout}
+            className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+            title="Log out from Admin"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </div>

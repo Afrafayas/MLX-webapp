@@ -2,8 +2,15 @@ import { Shop, AdminStats } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('cbez_admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function fetchStats(): Promise<AdminStats> {
-  const res = await fetch(`${API_BASE_URL}/shops/stats`);
+  const res = await fetch(`${API_BASE_URL}/shops/stats`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch admin statistics');
   const result = await res.json();
   return result.data?.stats ?? {
@@ -26,14 +33,18 @@ export async function fetchShops(params?: {
   if (params?.category) query.append('category', params.category);
   if (params?.search) query.append('search', params.search);
 
-  const res = await fetch(`${API_BASE_URL}/shops?${query.toString()}`);
+  const res = await fetch(`${API_BASE_URL}/shops?${query.toString()}`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch shops');
   const result = await res.json();
   return result.data?.shops ?? [];
 }
 
 export async function fetchShopById(id: string): Promise<Shop> {
-  const res = await fetch(`${API_BASE_URL}/shops/${id}`);
+  const res = await fetch(`${API_BASE_URL}/shops/${id}`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error('Failed to fetch shop details');
   const result = await res.json();
   return result.data?.shop ?? result;
@@ -42,7 +53,10 @@ export async function fetchShopById(id: string): Promise<Shop> {
 export async function toggleVerifyShop(id: string, verified?: boolean): Promise<Shop> {
   const res = await fetch(`${API_BASE_URL}/shops/${id}/verify`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify({ verified }),
   });
   const result = await res.json();
@@ -53,7 +67,10 @@ export async function toggleVerifyShop(id: string, verified?: boolean): Promise<
 export async function updateShop(id: string, shopData: Partial<Shop>): Promise<Shop> {
   const res = await fetch(`${API_BASE_URL}/shops/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify(shopData),
   });
   const result = await res.json();
@@ -64,6 +81,7 @@ export async function updateShop(id: string, shopData: Partial<Shop>): Promise<S
 export async function deleteShop(id: string): Promise<{ success: boolean; message: string }> {
   const res = await fetch(`${API_BASE_URL}/shops/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(result.message || 'Failed to delete shop');
