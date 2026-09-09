@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, IsIn, IsOptional } from 'class-validator';
 
 export class CreateLeadDto {
   @IsString()
@@ -6,8 +6,8 @@ export class CreateLeadDto {
   shopId: string;
 
   @IsString()
-  @IsNotEmpty()
-  productId: string;
+  @IsOptional()
+  productId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -21,6 +21,7 @@ export class CreateLeadDto {
   @IsNotEmpty()
   customerPhone: string;
 
-  @IsIn(['call', 'whatsapp'], { message: 'Contact type must be call or whatsapp' })
-  contactType: 'call' | 'whatsapp';
+  @IsString()
+  @IsIn(['call', 'whatsapp'])
+  contactType: string;
 }

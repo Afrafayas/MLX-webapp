@@ -252,3 +252,89 @@ export async function deleteSellerProduct(productId: string, token: string) {
   if (!res.ok) throw new Error(data.message || 'Failed to delete product listing');
   return data;
 }
+
+/* Follow Shop APIs */
+export async function followShop(shopId: string, token: string) {
+  const res = await fetch(`${API_BASE_URL}/follows/${shopId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to follow shop');
+  return data;
+}
+
+export async function unfollowShop(shopId: string, token: string) {
+  const res = await fetch(`${API_BASE_URL}/follows/${shopId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to unfollow shop');
+  return data;
+}
+
+export async function getFollowedShops(token: string): Promise<Shop[]> {
+  const res = await fetch(`${API_BASE_URL}/follows/my-shops`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch followed shops');
+  const result = await res.json();
+  return result.data?.shops ?? [];
+}
+
+export async function checkFollowStatus(shopId: string, token: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE_URL}/follows/status/${shopId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return false;
+  const result = await res.json();
+  return Boolean(result.isFollowing);
+}
+
+export async function getShopFollowers(token: string): Promise<{ count: number; followers: Array<{ id: string; name: string; email?: string; phone?: string; followedAt: string }> }> {
+  const res = await fetch(`${API_BASE_URL}/follows/shop-followers`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch shop followers');
+  const result = await res.json();
+  return result.data ?? { count: 0, followers: [] };
+}
+
+/* Local Shop Network Sourcing Request APIs */
+export async function createNetworkInquiry(inquiryData: {
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  city: string;
+  category: string;
+  gadgetNeeded: string;
+  targetBudget?: number;
+  notes?: string;
+}) {
+  const res = await fetch(`${API_BASE_URL}/network/inquiries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(inquiryData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to submit network request');
+  return data;
+}
+
+export async function getNetworkInquiries(params?: {
+  city?: string;
+  category?: string;
+  search?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.city) query.append('city', params.city);
+  if (params?.category) query.append('category', params.category);
+  if (params?.search) query.append('search', params.search);
+
+  const res = await fetch(`${API_BASE_URL}/network/inquiries?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch network inquiries');
+  const result = await res.json();
+  return result.data?.inquiries ?? [];
+}
+

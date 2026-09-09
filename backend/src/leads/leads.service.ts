@@ -15,9 +15,9 @@ export class LeadsService {
     const lead = await this.prisma.lead.create({
       data: {
         shopId: dto.shopId,
-        productId: dto.productId,
-        productName: dto.productName,
-        customerName: dto.customerName,
+        productId: dto.productId || undefined,
+        productName: dto.productName || 'Direct Shop Call',
+        customerName: dto.customerName || 'Local Consumer',
         customerPhone: dto.customerPhone,
         contactType: dto.contactType,
       },

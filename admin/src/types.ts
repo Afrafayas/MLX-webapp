@@ -41,3 +41,38 @@ export interface AdminStats {
   totalLeads: number;
   totalUsers: number;
 }
+
+export interface UserAccount {
+  id: string;
+  email: string | null;
+  name: string;
+  phone: string | null;
+  role: 'customer' | 'seller' | 'admin' | string;
+  createdAt: string;
+  updatedAt?: string;
+  shop?: {
+    id: string;
+    name: string;
+    city: string;
+    category: string;
+    verified: boolean;
+  } | null;
+}
+
+export interface ActivityLogItem {
+  id: string;
+  userId: string;
+  action: string;
+  details?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string | null;
+    role: string;
+  };
+}
+
+

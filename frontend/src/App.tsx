@@ -1,7 +1,8 @@
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ManageCategoriesBrandsModal } from './components/ManageCategoriesBrandsModal';
+import { NetworkCreateModal } from './components/NetworkCreateModal';
 import { Footer } from './components/Footer';
-import { getProducts, getShops, registerUser, createSellerProduct } from './services/apiService';
+import { getProducts, getShops, registerUser, createSellerProduct, sendLead, getFollowedShops, unfollowShop, getNetworkInquiries, getShopFollowers } from './services/apiService';
 import React, { ChangeEvent, FormEvent } from 'react';
 import { 
   Search, 
@@ -13,6 +14,8 @@ import {
   ShieldCheck, 
   ChevronRight, 
   ChevronLeft,
+  Network,
+  UserCheck,
   Plus, 
   Edit, 
   Trash2, 
@@ -180,8 +183,8 @@ export default function App() {
   // --- REDUX SELECTORS ---
   const { activeShop, activeUser, authRole, showAuthModal, authTab } = useAppSelector(state => state.auth);
   const { items: products, shops, leads, selectedProduct, showAddEditModal, productToEdit } = useAppSelector(state => state.products);
-  const filters = useAppSelector(state => state.filters);
   const { toasts, dashboardTab } = useAppSelector(state => state.ui);
+  const filters = useAppSelector(state => state.filters);
 
   // --- LIVE BACKEND DATA LOADER ---
   React.useEffect(() => {
@@ -267,9 +270,14 @@ export default function App() {
     password: ''
   });
 
+  // Network inquiry modal state
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = React.useState(false);
+
   // customer dashboard sub-navigation tab state
-  const [customerTab, setCustomerTab] = React.useState<'inquiries' | 'profile'>('inquiries');
-  
+  const [customerTab, setCustomerTab] = React.useState<'inquiries' | 'following' | 'network' | 'profile'>('inquiries');
+  const [followedShops, setFollowedShops] = React.useState<Shop[]>([]);
+  const [networkInquiriesList, setNetworkInquiriesList] = React.useState<any[]>([]);
+
   // customer profile editor form inputs state
   const [custProfileForm, setCustProfileForm] = React.useState({
     name: '',
@@ -277,7 +285,7 @@ export default function App() {
     phone: ''
   });
 
-  // Sync profile editor fields when the logged-in customer user changes
+  // Sync profile editor fields & load customer dashboard data when logged in
   React.useEffect(() => {
     if (activeUser) {
       setCustProfileForm({
@@ -286,7 +294,38 @@ export default function App() {
         phone: activeUser.phone
       });
     }
-  }, [activeUser]);
+
+    async function loadCustomerData() {
+      const token = localStorage.getItem('mlx_token');
+      if (activeUser && token) {
+        try {
+          const shopsData = await getFollowedShops(token);
+          setFollowedShops(shopsData);
+        } catch (err) {
+          console.warn('Failed to load followed shops:', err);
+        }
+      }
+      try {
+        const inqs = await getNetworkInquiries();
+        setNetworkInquiriesList(inqs);
+      } catch (err) {
+        console.warn('Failed to load network inquiries:', err);
+      }
+    }
+    loadCustomerData();
+  }, [activeUser, customerTab]);
+
+  const handleUnfollowShopInDash = async (shopId: string) => {
+    const token = localStorage.getItem('mlx_token');
+    if (!token) return;
+    try {
+      await unfollowShop(shopId, token);
+      setFollowedShops(prev => prev.filter(s => s.id !== shopId));
+      triggerToast('Unfollowed store successfully', 'info');
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to unfollow shop', 'warning');
+    }
+  };
 
   const [registerForm, setRegisterForm] = React.useState({
     name: '',
@@ -910,7 +949,7 @@ export default function App() {
   };
 
   // Capture Lead & Open Link
-  const triggerLeadCapture = (product: Product, seller: Shop, contactType: 'call' | 'whatsapp') => {
+  const triggerLeadCapture = async (product: Product, seller: Shop, contactType: 'call' | 'whatsapp') => {
     const leadId = `lead-${Date.now()}`;
     const name = activeUser ? activeUser.name : "Anonymous Buyer";
     const phone = activeUser ? activeUser.phone : "Not Logged In";
@@ -927,11 +966,27 @@ export default function App() {
     };
     
     dispatch(addLead(newLead));
+
+    try {
+      await sendLead({
+        shopId: seller.id,
+        productId: product.id,
+        productName: product.name,
+        customerName: name,
+        customerPhone: phone,
+        contactType,
+      });
+    } catch (err) {
+      console.warn('Lead API submission fallback:', err);
+    }
   };
 
   const handleCallSeller = (product: Product, seller: Shop) => {
     triggerLeadCapture(product, seller, 'call');
-    triggerToast(`📞 Connecting call with ${seller.name} (${seller.phone}) regarding "${product.name}"...`, 'success');
+    triggerToast(`📞 Direct Call lead logged! Connecting call with ${seller.name} (${seller.phone})...`, 'success');
+    if (seller.phone) {
+      window.location.href = `tel:${seller.phone}`;
+    }
   };
 
   const handleWhatsAppSeller = (product: Product, seller: Shop) => {
@@ -1114,6 +1169,28 @@ export default function App() {
 
           {/* Header Action Buttons for standard Users and Seller Shop Portal */}
           <div className="header-actions">
+            <button
+              className="action-btn"
+              onClick={() => setIsNetworkModalOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                borderRadius: '10px',
+                padding: '0.45rem 0.8rem',
+                cursor: 'pointer',
+              }}
+              title="Broadcast Local Shop Request"
+            >
+              <Network size={15} />
+              <span className="nav-btn-text">Local Network</span>
+            </button>
+
             {activeShop ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button 
@@ -1525,6 +1602,22 @@ export default function App() {
                 <MessageSquare size={16} />
                 <span>My Inquiries Log</span>
               </button>
+
+              <button 
+                className={`dash-menu-btn ${customerTab === 'following' ? 'active' : ''}`}
+                onClick={() => setCustomerTab('following')}
+              >
+                <UserCheck size={16} />
+                <span>Stores I Follow ({followedShops.length})</span>
+              </button>
+
+              <button 
+                className={`dash-menu-btn ${customerTab === 'network' ? 'active' : ''}`}
+                onClick={() => setCustomerTab('network')}
+              >
+                <Network size={16} />
+                <span>Network Requests</span>
+              </button>
               
               <button 
                 className={`dash-menu-btn ${customerTab === 'profile' ? 'active' : ''}`}
@@ -1631,6 +1724,167 @@ export default function App() {
                       <button className="btn-primary" onClick={() => navigate('/')} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
                         Browse Used Gadgets
                       </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : customerTab === 'following' ? (
+              /* Stores I Follow Tab */
+              <div className="dashboard-panel">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="panel-title">Stores I Follow</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary-light)' }}>
+                      Verified merchant partners you are following
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1rem' }}>
+                  {followedShops.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                      {followedShops.map((shop) => (
+                        <div
+                          key={shop.id}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid var(--light-border)',
+                            borderRadius: '12px',
+                            padding: '1.25rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '0.75rem',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>{shop.name}</h4>
+                              <span style={{ fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>
+                                {shop.city}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                              📍 {shop.address}
+                            </p>
+                            <p style={{ fontSize: '0.78rem', color: '#475569', margin: '0.25rem 0 0 0' }}>
+                              👤 Owner: {shop.ownerName} | 🏷️ {shop.category || 'Mobiles & Electronics'}
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            {shop.phone && (
+                              <a
+                                href={`tel:${shop.phone}`}
+                                className="action-btn sell-btn"
+                                style={{ flex: 1, padding: '0.4rem', fontSize: '0.78rem', justifyContent: 'center', textDecoration: 'none' }}
+                              >
+                                <Phone size={13} />
+                                <span>Call Shop</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleUnfollowShopInDash(shop.id)}
+                              style={{
+                                padding: '0.4rem 0.75rem',
+                                fontSize: '0.78rem',
+                                borderRadius: '8px',
+                                border: '1px solid #fca5a5',
+                                background: '#fef2f2',
+                                color: '#dc2626',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Unfollow
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary-light)' }}>
+                      <UserCheck size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>You are not following any local shops yet. Click "+ Follow Shop" on any product detail page!</p>
+                      <button className="btn-primary" onClick={() => navigate('/')} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+                        Explore Shop Catalog
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : customerTab === 'network' ? (
+              /* Network Broadcast Requests Tab */
+              <div className="dashboard-panel">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="panel-title">City Network Requests</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary-light)' }}>
+                      Broadcast gadget requests directly to local shop networks
+                    </div>
+                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => setIsNetworkModalOpen(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                      border: 'none',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    <Network size={16} />
+                    <span>Broadcast New Request</span>
+                  </button>
+                </div>
+
+                <div style={{ marginTop: '1rem' }}>
+                  {networkInquiriesList.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {networkInquiriesList.map((inq: any) => (
+                        <div
+                          key={inq.id}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid var(--light-border)',
+                            borderRadius: '12px',
+                            padding: '1rem 1.25rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>{inq.gadgetNeeded}</span>
+                              <span style={{ fontSize: '0.75rem', background: '#ffedd5', color: '#c2410c', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>
+                                📍 {inq.city} Network
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.3rem' }}>
+                              Category: <strong>{inq.category}</strong> {inq.targetBudget ? `| Budget: ₹${inq.targetBudget.toLocaleString('en-IN')}` : ''}
+                            </div>
+                            {inq.notes && (
+                              <div style={{ fontSize: '0.78rem', color: '#475569', marginTop: '0.2rem' }}>
+                                "{inq.notes}"
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <div>Requested by: {inq.customerName}</div>
+                            <div>{new Date(inq.createdAt || Date.now()).toLocaleDateString('en-IN')}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary-light)' }}>
+                      <Network size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>No active network requests found. Click "Broadcast New Request" to ask local shop owners for any device!</p>
                     </div>
                   )}
                 </div>
@@ -2048,7 +2302,20 @@ export default function App() {
         onToast={triggerToast}
       />
 
-      <ProductDetailModal getSellerShop={getSellerShop} onCallSeller={handleCallSeller} onWhatsAppSeller={handleWhatsAppSeller} />
+      <ProductDetailModal
+        getSellerShop={getSellerShop}
+        onCallSeller={handleCallSeller}
+        onWhatsAppSeller={handleWhatsAppSeller}
+        onToast={triggerToast}
+      />
+
+      <NetworkCreateModal
+        isOpen={isNetworkModalOpen}
+        onClose={() => setIsNetworkModalOpen(false)}
+        onSuccessToast={(msg) => triggerToast(msg, 'success')}
+        defaultCustomerName={activeUser?.name || ''}
+        defaultCustomerPhone={activeUser?.phone || ''}
+      />
 
       {/* --- ADD / EDIT PRODUCT MODAL --- */}
       {showAddEditModal && (

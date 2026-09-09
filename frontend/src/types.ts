@@ -39,12 +39,26 @@ export interface Brand {
 export interface Lead {
   id: string;
   shopId: string;
-  productId: string;
+  productId?: string;
   productName: string;
   customerName: string;
   customerPhone: string;
   contactType: 'call' | 'whatsapp';
   createdAt: string;
+}
+
+export interface NetworkInquiry {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  city: string;
+  category: string;
+  gadgetNeeded: string;
+  targetBudget?: number;
+  notes?: string;
+  createdAt: string;
+  userId?: string;
 }
 
 export interface Product {
@@ -59,7 +73,6 @@ export interface Product {
   shopId: string;
   specs: Record<string, string>;
   images?: string[];
-  // Task 2 & Task 3 New Fields:
   storage?: string;
   ram?: string;
   batteryHealth?: string;

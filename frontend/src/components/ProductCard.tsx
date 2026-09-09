@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Smartphone, MapPin, ShieldCheck } from 'lucide-react';
+import { Phone, Smartphone, MapPin, ShieldCheck, Clock } from 'lucide-react';
 import { Product, Shop } from '../types';
 import { useAppDispatch } from '../store';
 import { setSelectedProduct } from '../store/productsSlice';
@@ -84,10 +84,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="merchant-info">
           <div className="merchant-name-row">
             <span className="merchant-name">{seller.name}</span>
-            <div className="merchant-badge">
-              <ShieldCheck size={12} />
-              <span>Verified</span>
-            </div>
+            {seller.verified ? (
+              <div className="merchant-badge">
+                <ShieldCheck size={12} />
+                <span>Verified</span>
+              </div>
+            ) : (
+              <div className="merchant-badge" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                <Clock size={12} />
+                <span>Pending</span>
+              </div>
+            )}
           </div>
           <div className="merchant-location">
             <MapPin size={12} />

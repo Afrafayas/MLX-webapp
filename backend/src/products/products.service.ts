@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityLogsService: ActivityLogsService,
+  ) {}
 
   async create(sellerUserId: string, dto: CreateProductDto) {
     const shop = await this.prisma.shop.findUnique({
@@ -31,6 +35,12 @@ export class ProductsService {
         shop: true,
       },
     });
+
+    await this.activityLogsService.log(
+      sellerUserId,
+      'CREATE_PRODUCT',
+      `Added product "${product.name}" (Price: ₹${product.price})`,
+    );
 
     return {
       success: true,
@@ -87,30 +97,60 @@ export class ProductsService {
       where.shopId = query.shopId;
     }
 
-    if (query.category && query.category !== 'all' && query.category !== 'All Categories') {
-      where.category = query.category;
+    if (
+      query.category &&
+      query.category !== 'all' &&
+      query.category !== 'All Categories' &&
+      query.category !== 'All'
+    ) {
+      where.category = { contains: query.category, mode: 'insensitive' };
     }
 
-    if (query.brand) {
-      where.brand = { contains: query.brand };
+    if (
+      query.brand &&
+      query.brand !== 'all' &&
+      query.brand !== 'All Brands' &&
+      query.brand !== 'All'
+    ) {
+      where.brand = { contains: query.brand, mode: 'insensitive' };
     }
 
-    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-      where.price = {};
-      if (query.minPrice !== undefined) where.price.gte = Number(query.minPrice);
-      if (query.maxPrice !== undefined) where.price.lte = Number(query.maxPrice);
+    if (
+      query.minPrice !== undefined &&
+      query.minPrice !== null &&
+      !isNaN(Number(query.minPrice)) &&
+      Number(query.minPrice) > 0
+    ) {
+      where.price = where.price || {};
+      where.price.gte = Number(query.minPrice);
     }
 
-    if (query.city) {
-      where.shop = { city: { contains: query.city } };
+    if (
+      query.maxPrice !== undefined &&
+      query.maxPrice !== null &&
+      !isNaN(Number(query.maxPrice)) &&
+      Number(query.maxPrice) > 0
+    ) {
+      where.price = where.price || {};
+      where.price.lte = Number(query.maxPrice);
     }
 
-    if (query.search) {
+    if (
+      query.city &&
+      query.city !== 'all' &&
+      query.city !== 'All Cities' &&
+      query.city !== 'All'
+    ) {
+      where.shop = { city: { contains: query.city, mode: 'insensitive' } };
+    }
+
+    if (query.search && query.search.trim()) {
+      const s = query.search.trim();
       where.OR = [
-        { name: { contains: query.search } },
-        { brand: { contains: query.search } },
-        { category: { contains: query.search } },
-        { description: { contains: query.search } },
+        { name: { contains: s, mode: 'insensitive' } },
+        { brand: { contains: s, mode: 'insensitive' } },
+        { category: { contains: s, mode: 'insensitive' } },
+        { description: { contains: s, mode: 'insensitive' } },
       ];
     }
 
@@ -197,6 +237,23 @@ export class ProductsService {
     };
   }
 
+  async findByShop(shopId: string) {
+    const products = await this.prisma.product.findMany({
+      where: { shopId },
+      orderBy: { createdAt: 'desc' },
+      include: { shop: true },
+    });
+
+    return {
+      success: true,
+      message: `Products for shop ID "${shopId}" fetched successfully`,
+      data: {
+        products: products.map((p) => this.formatProduct(p)),
+      },
+    };
+  }
+
+
   async remove(id: string, sellerUserId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
@@ -212,7 +269,16 @@ export class ProductsService {
     }
 
     await this.prisma.product.delete({ where: { id } });
-    return { success: true, message: 'Product deleted successfully' };
+    await this.activityLogsService.log(
+      sellerUserId,
+      'DELETE_PRODUCT',
+      `Deleted product "${product.name}"`,
+    );
+    return {
+      success: true,
+      message: 'Product deleted successfully',
+      data: { id },
+    };
   }
 
   private formatProduct(p: any) {

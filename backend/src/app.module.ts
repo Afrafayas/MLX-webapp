@@ -10,6 +10,10 @@ import { AppService } from './app.service';
 
 import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
+import { UsersModule } from './users/users.module';
+import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { FollowsModule } from './follows/follows.module';
+import { NetworkModule } from './network/network.module';
 
 @Module({
   imports: [
@@ -21,6 +25,10 @@ import { BrandsModule } from './brands/brands.module';
     LeadsModule,
     CategoriesModule,
     BrandsModule,
+    UsersModule,
+    ActivityLogsModule,
+    FollowsModule,
+    NetworkModule,
   ],
   controllers: [AppController],
   providers: [AppService],

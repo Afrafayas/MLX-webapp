@@ -18,7 +18,7 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
       <div className="glass-panel w-full max-w-2xl h-full border-l border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl">
         <div className="p-6 border-b border-white/10 bg-slate-900/80 flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-orange-500/30 border border-orange-400/30">
               {shop.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -37,11 +37,11 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
               </div>
               <p className="text-xs text-slate-400 mt-1 flex items-center gap-3">
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                  <MapPin className="w-3.5 h-3.5 text-orange-400" />
                   {shop.city}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-purple-400" />
+                  <Tag className="w-3.5 h-3.5 text-amber-400" />
                   {shop.category}
                 </span>
                 <span className="flex items-center gap-1">
@@ -61,7 +61,7 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="p-4 rounded-2xl glass-panel border border-white/5 space-y-3 bg-slate-900/40">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Store Contact Info</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400">Store Contact Info</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-slate-400">Business Owner:</span>
@@ -74,7 +74,7 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
               <div>
                 <span className="text-slate-400">Phone Contact:</span>
                 <p className="font-semibold text-white mt-0.5 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-indigo-400" />
+                  <Phone className="w-3.5 h-3.5 text-orange-400" />
                   {shop.phone}
                 </p>
               </div>
@@ -91,7 +91,7 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-purple-400" />
+                <ShoppingBag className="w-4 h-4 text-orange-400" />
                 Store Catalog ({products.length} Products)
               </h3>
             </div>
@@ -106,11 +106,11 @@ export const ShopDetailDrawer: React.FC<ShopDetailDrawerProps> = ({ shop, isOpen
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className="p-3.5 rounded-xl glass-panel border border-white/5 hover:border-indigo-500/30 transition-all bg-slate-900/30"
+                    className="p-3.5 rounded-xl glass-panel border border-white/5 hover:border-orange-500/30 transition-all bg-slate-900/30"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-bold text-xs text-white line-clamp-1">{product.name}</div>
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 shrink-0">
                         ₹{product.price?.toLocaleString('en-IN')}
                       </span>
                     </div>

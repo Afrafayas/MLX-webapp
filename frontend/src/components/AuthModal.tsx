@@ -71,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onToast }) => {
           address: 'Kochi Market',
           city: 'Kochi',
           category: 'Mobiles & Tablets',
-          verified: true,
+          verified: Boolean(resData.user?.shop?.verified),
           rating: 5.0,
           joinedDate: 'Today'
         };

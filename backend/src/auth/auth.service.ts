@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -49,7 +51,7 @@ export class AuthService {
 
     // Check existing user
     if (dto.email) {
-      const existingEmail = await this.prisma.user.findUnique({
+      const existingEmail = await this.prisma.user.findFirst({
         where: { email: dto.email.toLowerCase() },
       });
       if (existingEmail) {
@@ -85,7 +87,7 @@ export class AuthService {
       data: {
         email: dto.email ? dto.email.toLowerCase() : null,
         password: hashedPassword,
-        name: dto.name,
+        name: dto.name || dto.ownerName || dto.shopName || 'User',
         phone: dto.phone || null,
         role: role,
         ...(shopCreateData ? { shop: { create: shopCreateData } } : {}),
@@ -97,8 +99,21 @@ export class AuthService {
 
     const token = this.generateToken(user.id, user.email || user.phone || user.id, user.role);
 
+    // Log Activity
+    await this.activityLogsService.log(
+      user.id,
+      'REGISTER',
+      `Registered new ${user.role} account (${user.name})`,
+    );
+
     const { password, ...userWithoutPassword } = user;
     return {
+      success: true,
+      message: 'User registered successfully',
+      data: {
+        user: userWithoutPassword,
+        token,
+      },
       user: userWithoutPassword,
       token,
     };
@@ -139,8 +154,21 @@ export class AuthService {
 
     const token = this.generateToken(user.id, user.email || user.phone || user.id, user.role);
 
+    // Log Activity
+    await this.activityLogsService.log(
+      user.id,
+      'LOGIN',
+      `User ${user.name} logged in successfully`,
+    );
+
     const { password, ...userWithoutPassword } = user;
     return {
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: userWithoutPassword,
+        token,
+      },
       user: userWithoutPassword,
       token,
     };
@@ -157,7 +185,14 @@ export class AuthService {
     }
 
     const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return {
+      success: true,
+      message: 'User profile fetched successfully',
+      data: {
+        user: userWithoutPassword,
+      },
+      ...userWithoutPassword,
+    };
   }
 
   private generateToken(userId: string, email: string, role: string): string {

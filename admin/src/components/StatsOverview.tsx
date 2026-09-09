@@ -15,7 +15,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats, onFilterSta
       title: 'Total Registered Shops',
       value: stats.totalShops,
       icon: Store,
-      color: 'from-blue-600/20 to-indigo-600/20 border-blue-500/30 text-blue-400',
+      color: 'from-orange-600/20 to-amber-600/20 border-orange-500/30 text-orange-400',
       badge: 'All Stores',
       filterKey: 'all' as const,
     },
@@ -42,7 +42,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats, onFilterSta
       title: 'Total Active Products',
       value: stats.totalProducts,
       icon: ShoppingBag,
-      color: 'from-purple-600/20 to-pink-600/20 border-purple-500/30 text-purple-400',
+      color: 'from-orange-500/15 to-rose-600/20 border-orange-400/30 text-orange-300',
       badge: 'Catalog Listings',
       filterKey: null,
     },
@@ -60,7 +60,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats, onFilterSta
       title: 'Total Users Registered',
       value: stats.totalUsers,
       icon: Users,
-      color: 'from-violet-600/20 to-fuchsia-600/20 border-violet-500/30 text-violet-400',
+      color: 'from-amber-500/20 to-orange-600/20 border-amber-500/30 text-amber-400',
       badge: 'Customers & Sellers',
       filterKey: null,
     },
@@ -79,7 +79,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats, onFilterSta
             onClick={() => isClickable && card.filterKey && onFilterStatus(card.filterKey)}
             className={`glass-panel p-4 rounded-2xl border bg-gradient-to-br ${card.color} transition-all duration-200 ${
               isClickable ? 'cursor-pointer hover:scale-[1.02]' : ''
-            } ${isSelected ? 'ring-2 ring-indigo-500 shadow-lg shadow-indigo-500/20' : ''}`}
+            } ${isSelected ? 'ring-2 ring-orange-500 shadow-lg shadow-orange-500/20' : ''}`}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">

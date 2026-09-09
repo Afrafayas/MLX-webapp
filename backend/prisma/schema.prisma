@@ -1,4 +1,4 @@
-  // Prisma schema for MongoDB Atlas
+// Prisma schema for MongoDB Atlas
 
 generator client {
   provider = "prisma-client-js"
@@ -15,11 +15,14 @@ model User {
   password  String?
   name      String
   phone     String?  @unique
-  role      String   @default("customer") // "customer" | "seller"
+  role      String   @default("customer") // "customer" | "seller" | "admin"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shop      Shop?
+  shop             Shop?
+  activities       ActivityLog[]
+  follows          Follow[]
+  networkInquiries NetworkInquiry[]
 }
 
 model Shop {
@@ -41,6 +44,7 @@ model Shop {
 
   products  Product[]
   leads     Lead[]
+  followers Follow[]
 }
 
 model Product {
@@ -73,8 +77,37 @@ model Lead {
   shopId        String   @db.ObjectId
   shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
-  productId     String   @db.ObjectId
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId     String?  @db.ObjectId
+  product       Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shopId    String   @db.ObjectId
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, shopId])
+}
+
+model NetworkInquiry {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  city          String
+  category      String
+  gadgetNeeded  String
+  targetBudget  Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  userId        String?  @db.ObjectId
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Category {
@@ -92,4 +125,15 @@ model Brand {
   logo      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  details   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 }

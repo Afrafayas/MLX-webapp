@@ -85,6 +85,10 @@ export class BrandsService {
     await this.prisma.brand.delete({
       where: { id },
     });
-    return { success: true, message: 'Brand deleted successfully' };
+    return {
+      success: true,
+      message: 'Brand deleted successfully',
+      data: { id },
+    };
   }
 }

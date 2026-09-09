@@ -87,6 +87,10 @@ export class CategoriesService {
     await this.prisma.category.delete({
       where: { id },
     });
-    return { success: true, message: 'Category deleted successfully' };
+    return {
+      success: true,
+      message: 'Category deleted successfully',
+      data: { id },
+    };
   }
 }

@@ -13,10 +13,10 @@ export const Navbar: React.FC<NavbarProps> = ({ searchTerm, setSearchTerm, onRef
     <header className="glass-panel sticky top-0 z-30 px-6 py-4 border-b border-white/10 flex items-center justify-between gap-4">
       {/* Mobile Title */}
       <div className="flex items-center gap-3 md:hidden">
-        <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/30">
           <ShieldCheck className="w-5 h-5" />
         </div>
-        <div className="font-bold text-lg text-white">Cbez Admin</div>
+        <div className="font-bold text-lg text-white">MLX Admin</div>
       </div>
 
       {/* Global Search Bar */}
@@ -45,14 +45,14 @@ export const Navbar: React.FC<NavbarProps> = ({ searchTerm, setSearchTerm, onRef
           disabled={isLoading}
           className="flex items-center gap-2 px-3.5 py-2 rounded-xl glass-panel glass-panel-hover text-slate-300 text-xs font-semibold hover:text-white transition-all disabled:opacity-50 cursor-pointer"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-orange-500' : ''}`} />
           <span className="hidden sm:inline">Refresh Data</span>
         </button>
 
         {/* Notification Bell */}
-        <button className="relative p-2 rounded-xl glass-panel text-slate-400 hover:text-white transition-colors">
+        <button className="relative p-2 rounded-xl glass-panel text-slate-400 hover:text-white transition-colors cursor-pointer">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
         </button>
       </div>
     </header>

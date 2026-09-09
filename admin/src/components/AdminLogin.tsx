@@ -47,15 +47,15 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center p-4 selection:bg-indigo-500/30 selection:text-indigo-300">
+    <div className="min-h-screen bg-[#0F1117] flex items-center justify-center p-4 selection:bg-orange-500/30 selection:text-orange-300">
       <div className="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6">
         {/* Header Logo & Title */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center mx-auto shadow-xl shadow-indigo-500/30">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center mx-auto shadow-xl shadow-orange-500/30 border border-orange-400/30">
             <ShieldCheck className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white">
-            Cbez <span className="text-indigo-400">ADMIN</span>
+            MLX <span className="text-orange-500">ADMIN</span>
           </h1>
           <p className="text-xs text-slate-400">Sign in with your Super Admin credentials to access Control Center.</p>
         </div>
@@ -72,7 +72,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-indigo-400" />
+              <Mail className="w-3.5 h-3.5 text-orange-400" />
               Admin Email / Phone
             </label>
             <input
@@ -81,13 +81,13 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 text-sm rounded-xl glass-input text-white placeholder:text-slate-500"
-              placeholder="e.g. admin@cbez.com or seller@example.com"
+              placeholder="e.g. admin@mlx.com or seller@example.com"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <Lock className="w-3.5 h-3.5 text-orange-400" />
               Password
             </label>
             <input
@@ -103,7 +103,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer mt-2"
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer mt-2"
           >
             <span>{isLoading ? 'Authenticating...' : 'Sign In to Admin Portal'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -111,7 +111,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
         </form>
 
         <div className="pt-4 border-t border-white/10 text-center text-[11px] text-slate-500">
-          Protected Area — Cbez B2C Platform Management Portal
+          Protected Area — MLX B2B Sourcing & Shop Management Portal
         </div>
       </div>
     </div>

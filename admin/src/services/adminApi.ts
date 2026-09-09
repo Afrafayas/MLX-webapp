@@ -1,4 +1,4 @@
-import { Shop, AdminStats } from '../types';
+import { Shop, AdminStats, UserAccount } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -87,3 +87,71 @@ export async function deleteShop(id: string): Promise<{ success: boolean; messag
   if (!res.ok) throw new Error(result.message || 'Failed to delete shop');
   return result;
 }
+
+// User Management API Services
+export async function fetchUsers(params?: { role?: string; search?: string }): Promise<UserAccount[]> {
+  const query = new URLSearchParams();
+  if (params?.role && params.role !== 'all') query.append('role', params.role);
+  if (params?.search) query.append('search', params.search);
+
+  const res = await fetch(`${API_BASE_URL}/users?${query.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch user accounts');
+  const result = await res.json();
+  return result.data?.users ?? [];
+}
+
+export async function updateUser(id: string, userData: Partial<UserAccount>): Promise<UserAccount> {
+  const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(userData),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || 'Failed to update user account');
+  return result.data?.user ?? result;
+}
+
+export async function deleteUser(id: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || 'Failed to delete user account');
+  return result;
+}
+
+// Activity Logs API Services
+export async function fetchMyActivityLogs(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/activity-logs/mine`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch activity logs');
+  const result = await res.json();
+  return result.data?.logs ?? [];
+}
+
+export async function fetchUserActivityLogs(userId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/activity-logs/user/${userId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch user activity logs');
+  const result = await res.json();
+  return result.data?.logs ?? [];
+}
+
+export async function fetchAllActivityLogs(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/activity-logs`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch platform activity logs');
+  const result = await res.json();
+  return result.data?.logs ?? [];
+}
+
+

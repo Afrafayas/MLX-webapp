@@ -55,7 +55,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             User Shops Directory
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
               {filteredShops.length} Stores
             </span>
           </h2>
@@ -71,7 +71,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
               onClick={() => setFilterStatus('all')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 filterStatus === 'all'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -81,7 +81,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
               onClick={() => setFilterStatus('verified')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 filterStatus === 'verified'
-                  ? 'bg-emerald-600 text-white shadow-md'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -91,7 +91,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
               onClick={() => setFilterStatus('pending')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 filterStatus === 'pending'
-                  ? 'bg-amber-600 text-white shadow-md'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -156,14 +156,16 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
                   <tr key={shop.id} className="hover:bg-white/[0.03] transition-colors group">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-lg shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-lg shrink-0">
                           {shop.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-bold text-white group-hover:text-indigo-300 transition-colors flex items-center gap-2">
+                          <div className="font-bold text-white group-hover:text-orange-400 transition-colors flex items-center gap-2">
                             {shop.name}
                             {shop.verified && (
-                              <ShieldCheck className="w-4 h-4 text-emerald-400" title="Verified Store" />
+                              <span title="Verified Store">
+                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                              </span>
                             )}
                           </div>
                           <div className="text-xs text-slate-400 truncate max-w-[200px]" title={shop.address}>
@@ -177,7 +179,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
                       <div className="text-slate-200 font-medium text-xs">{shop.ownerName}</div>
                       <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
                         <span className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-indigo-400" />
+                          <Phone className="w-3 h-3 text-orange-400" />
                           {shop.phone}
                         </span>
                         {shop.whatsapp && (
@@ -191,11 +193,11 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
 
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-                        <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                        <MapPin className="w-3.5 h-3.5 text-orange-400" />
                         {shop.city}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
-                        <Tag className="w-3.5 h-3.5 text-purple-400" />
+                        <Tag className="w-3.5 h-3.5 text-amber-400" />
                         {shop.category}
                       </div>
                     </td>
@@ -242,7 +244,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => onViewDetails(shop)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors cursor-pointer"
                           title="View Store Products & Details"
                         >
                           <Eye className="w-4 h-4" />
@@ -250,7 +252,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
 
                         <button
                           onClick={() => onEdit(shop)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors cursor-pointer"
                           title="Edit Shop Details"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -258,7 +260,7 @@ export const ShopsTable: React.FC<ShopsTableProps> = ({
 
                         <button
                           onClick={() => onDelete(shop)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                           title="Delete Shop Listing"
                         >
                           <Trash2 className="w-4 h-4" />
