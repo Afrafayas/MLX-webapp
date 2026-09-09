@@ -228,6 +228,25 @@ export default function App() {
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const [isCatBrandModalOpen, setIsCatBrandModalOpen] = React.useState(false);
+  const [shopFollowers, setShopFollowers] = React.useState<Array<{ id: string; name: string; email?: string; phone?: string; followedAt: string }>>([]);
+  const [shopFollowersCount, setShopFollowersCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    async function fetchFollowers() {
+      if (activeShop && dashboardTab === 'followers') {
+        const token = localStorage.getItem('mlx_token');
+        if (!token) return;
+        try {
+          const res = await getShopFollowers(token);
+          setShopFollowers(res.followers || []);
+          setShopFollowersCount(res.count || (res.followers ? res.followers.length : 0));
+        } catch (err) {
+          console.warn('Failed to load shop followers:', err);
+        }
+      }
+    }
+    fetchFollowers();
+  }, [activeShop, dashboardTab]);
 
   const slides = [
     {
@@ -2028,6 +2047,14 @@ export default function App() {
               </button>
 
               <button 
+                className={`dash-menu-btn ${dashboardTab === 'followers' ? 'active' : ''}`}
+                onClick={() => dispatch(setDashboardTab('followers'))}
+              >
+                <UserCheck size={16} />
+                <span>My Store Followers ({shopFollowersCount})</span>
+              </button>
+
+              <button 
                 className={`dash-menu-btn ${dashboardTab === 'profile' ? 'active' : ''}`}
                 onClick={() => dispatch(setDashboardTab('profile'))}
               >
@@ -2190,6 +2217,69 @@ export default function App() {
                     <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary-light)' }}>
                       <MessageSquare size={36} style={{ opacity: 0.3, marginBottom: '1rem' }} />
                       <p>No customer contacts recorded yet. Make sure your shop location and contact info are accurate to attract clicks!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : dashboardTab === 'followers' ? (
+              /* My Store Followers Panel */
+              <div className="dashboard-panel">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="panel-title">My Store Followers</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary-light)' }}>
+                      Customers who are following <strong>{activeShop?.name}</strong> for inventory updates
+                    </div>
+                  </div>
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, color: '#2563eb' }}>
+                    Total Followers: {shopFollowersCount}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem' }}>
+                  {shopFollowers.length > 0 ? (
+                    <table className="leads-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--light-bg)', textAlign: 'left', borderBottom: '1px solid var(--light-border)' }}>
+                          <th style={{ padding: '0.75rem' }}>Followed Date</th>
+                          <th style={{ padding: '0.75rem' }}>Customer Name</th>
+                          <th style={{ padding: '0.75rem' }}>Contact Details</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'right' }}>Direct Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {shopFollowers.map((follower) => (
+                          <tr key={follower.id} style={{ borderBottom: '1px solid var(--light-border)' }}>
+                            <td style={{ padding: '0.75rem' }}>
+                              {new Date(follower.followedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                            </td>
+                            <td style={{ padding: '0.75rem', fontWeight: 600 }}>{follower.name}</td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <div>{follower.phone || follower.email || 'Registered Customer'}</div>
+                            </td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                              {follower.phone ? (
+                                <a
+                                  href={`https://wa.me/${follower.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${follower.name}, thank you for following ${activeShop?.name} on MLX Market!`)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn-whatsapp"
+                                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none', borderRadius: '6px' }}
+                                >
+                                  <span>WhatsApp Customer</span>
+                                </a>
+                              ) : (
+                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Subscribed</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary-light)' }}>
+                      <UserCheck size={36} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>No customers are following your store yet. Keep your product catalog updated and accurate to attract followers!</p>
                     </div>
                   )}
                 </div>
