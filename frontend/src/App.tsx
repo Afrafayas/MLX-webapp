@@ -221,6 +221,7 @@ export default function App() {
 
   // --- LOCAL COMPONENT STATES (FOR FORM INPUTS) ---
   const [customerEmailInput, setCustomerEmailInput] = React.useState('');
+  const [loginPasswordInput, setLoginPasswordInput] = React.useState('');
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const [isCatBrandModalOpen, setIsCatBrandModalOpen] = React.useState(false);
@@ -565,6 +566,7 @@ export default function App() {
         navigate('/seller-dashboard');
         dispatch(setDashboardTab('listings'));
         setCustomerEmailInput('');
+        setLoginPasswordInput('');
       } else {
         alert(`No registered store partner found with phone number matching "${customerEmailInput}". Please check the phone number or register a new shop account.`);
       }
@@ -592,6 +594,7 @@ export default function App() {
         triggerToast(`Welcome back, ${matchedUser.name}!`, 'success');
         navigate('/customer-dashboard');
         setCustomerEmailInput('');
+        setLoginPasswordInput('');
       } else {
         // Fallback demo user creation
         const demoUser: CustomerUser = {
@@ -606,6 +609,7 @@ export default function App() {
         triggerToast(`Signed in as ${demoUser.name} (${demoUser.email})`, 'success');
         navigate('/customer-dashboard');
         setCustomerEmailInput('');
+        setLoginPasswordInput('');
       }
     }
   };
@@ -2417,6 +2421,18 @@ export default function App() {
                     placeholder={authRole === 'seller' ? "e.g. 98765 43210 or 9812345678" : "e.g. arjun@gmail.com or enter any demo text"}
                     value={customerEmailInput}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setCustomerEmailInput(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Password *</label>
+                  <input 
+                    type="password" 
+                    className="form-input-text" 
+                    required
+                    placeholder="••••••••"
+                    value={loginPasswordInput}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setLoginPasswordInput(e.target.value)}
                   />
                 </div>
 
